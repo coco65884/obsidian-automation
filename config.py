@@ -10,14 +10,16 @@ ZOTERO_USER_ID = os.getenv("ZOTERO_USER_ID")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 PDF_FOLDER = os.getenv("PDF_FOLDER")
 NOTE_FOLDER = os.getenv("NOTE_FOLDER")
+TEMPLATE_PATH = os.getenv("TEMPLATE_PATH")
 
 required_vars = [
-    ZOTERO_API_KEY, ZOTERO_USER_ID, GEMINI_API_KEY, PDF_FOLDER, NOTE_FOLDER
+    ZOTERO_API_KEY, ZOTERO_USER_ID, GEMINI_API_KEY,
+    PDF_FOLDER, NOTE_FOLDER, TEMPLATE_PATH
 ]
 if not all(required_vars):
     print("エラー: 環境変数が正しく設定されていません。")
     print("ZOTERO_API_KEY, ZOTERO_USER_ID, GEMINI_API_KEY, "
-          "PDF_FOLDER, NOTE_FOLDER を .env ファイルで設定してください。")
+          "PDF_FOLDER, NOTE_FOLDER, TEMPLATE_PATH を .env ファイルで設定してください。")
     exit(1)
 
 # Gemini API の設定

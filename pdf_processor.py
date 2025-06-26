@@ -33,8 +33,44 @@ def load_custom_prompt():
         return None
 
 
-def summarize_text(text, model_name="gemini-pro"):
+def get_available_models():
+    """利用可能なモデルを確認"""
     try:
+        models = genai.list_models()
+        available_models = []
+        for model in models:
+            if 'generateContent' in model.supported_generation_methods:
+                # models/プレフィックスを除去してモデル名を取得
+                model_name = model.name.replace('models/', '')
+                available_models.append(model_name)
+        return available_models
+    except Exception as e:
+        print(f"利用可能なモデルの取得中にエラーが発生しました: {e}")
+        return []
+
+
+def summarize_text(text, model_name="gemini-2.5-flash"):
+    try:
+        # まず利用可能なモデルを確認
+        available_models = get_available_models()
+        if available_models:
+            print(f"利用可能なモデル: {available_models}")
+
+        # モデル名を確認し、必要に応じて調整
+        if model_name not in available_models:
+            # gemini-2.5-flashが見つからない場合、代替モデルを試す
+            fallback_models = ["gemini-1.5-flash",
+                               "gemini-1.5-pro", "gemini-pro"]
+            for fallback_model in fallback_models:
+                if fallback_model in available_models:
+                    print(f"モデル '{model_name}' が見つからないため、"
+                          f"'{fallback_model}' を使用します。")
+                    model_name = fallback_model
+                    break
+            else:
+                print("エラー: 利用可能なモデルが見つかりません。")
+                return None
+
         model = genai.GenerativeModel(model_name)
 
         # custom_prompt.mdからテンプレートを読み込み

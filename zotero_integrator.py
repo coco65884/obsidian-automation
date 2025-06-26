@@ -1,5 +1,5 @@
 from pyzotero import zotero
-import os
+from config import ZOTERO_USER_ID, ZOTERO_API_KEY
 
 
 def get_zotero_item_info(file_name_without_ext):
@@ -10,7 +10,8 @@ def get_zotero_item_info(file_name_without_ext):
         # 添付ファイルをチェックしてPDFファイル名と一致するか確認
         if 'data' in item and 'attachments' in item['data']:
             for attachment in item['data']['attachments']:
-                if 'filename' in attachment and attachment['filename'].startswith(file_name_without_ext):
+                filename = attachment.get('filename', '')
+                if filename.startswith(file_name_without_ext):
                     # 関連する親アイテム（論文など）の情報を取得
                     if 'parentItem' in attachment['data']:
                         parent_id = attachment['data']['parentItem']

@@ -1,12 +1,12 @@
 import os
-from config import OBSIDIAN_VAULT_PATH
+from config import NOTE_FOLDER
 
 
 def create_obsidian_note(pdf_path, zotero_data, summary_text):
     # PDFファイル名からノート名を決定 (拡張子なし)
     pdf_filename_with_ext = os.path.basename(pdf_path)
     note_title = os.path.splitext(pdf_filename_with_ext)[0]
-    note_path = os.path.join(OBSIDIAN_VAULT_PATH, f"{note_title}.md")
+    note_path = os.path.join(NOTE_FOLDER, f"{note_title}.md")
 
     # ノートコンテンツの生成
     content = f"# {note_title}\n\n"

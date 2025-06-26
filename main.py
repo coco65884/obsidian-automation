@@ -1,34 +1,16 @@
 import os
 import glob
-from config import ZOTERO_USER_ID, OBSIDIAN_VAULT_PATH
+from config import ZOTERO_USER_ID, PDF_FOLDER, NOTE_FOLDER
 from pdf_processor import extract_text_from_pdf, summarize_text
 from zotero_integrator import get_zotero_item_info
 from obsidian_note_creator import create_obsidian_note
-
-
-def get_resources_folder_path():
-    """02_Resourcesフォルダのパスを取得"""
-    # 現在のディレクトリから02_Resourcesを探す
-    current_dir = os.getcwd()
-    resources_path = os.path.join(current_dir, "02_Resources")
-
-    if not os.path.exists(resources_path):
-        # 親ディレクトリも確認
-        parent_dir = os.path.dirname(current_dir)
-        resources_path = os.path.join(parent_dir, "02_Resources")
-
-    if not os.path.exists(resources_path):
-        print("エラー: 02_Resourcesフォルダが見つかりません。")
-        return None
-
-    return resources_path
 
 
 def get_existing_notes():
     """Obsidian vault内の既存のノートファイル名を取得"""
     existing_notes = set()
     try:
-        for md_file in glob.glob(os.path.join(OBSIDIAN_VAULT_PATH, "*.md")):
+        for md_file in glob.glob(os.path.join(NOTE_FOLDER, "*.md")):
             note_name = os.path.splitext(os.path.basename(md_file))[0]
             existing_notes.add(note_name)
         return existing_notes
@@ -72,22 +54,21 @@ def process_pdf(pdf_path):
 
 def main():
     print(f"Zotero User ID: {ZOTERO_USER_ID}")
-    print(f"Obsidian Vault: {OBSIDIAN_VAULT_PATH}")
+    print(f"PDF Folder: {PDF_FOLDER}")
+    print(f"Note Folder: {NOTE_FOLDER}")
 
-    # 02_Resourcesフォルダのパスを取得
-    resources_path = get_resources_folder_path()
-    if not resources_path:
+    # PDFフォルダの存在確認
+    if not os.path.exists(PDF_FOLDER):
+        print(f"エラー: PDFフォルダ '{PDF_FOLDER}' が見つかりません。")
         return
-
-    print(f"Resources フォルダ: {resources_path}")
 
     # 既存のノートを取得
     existing_notes = get_existing_notes()
     print(f"既存のノート数: {len(existing_notes)}")
 
-    # 02_Resources内のPDFファイルを取得
-    pdf_files = glob.glob(os.path.join(resources_path, "*.pdf"))
-    print(f"Resources内のPDFファイル数: {len(pdf_files)}")
+    # PDFフォルダ内のPDFファイルを取得
+    pdf_files = glob.glob(os.path.join(PDF_FOLDER, "*.pdf"))
+    print(f"PDFフォルダ内のPDFファイル数: {len(pdf_files)}")
 
     processed_count = 0
     for pdf_path in pdf_files:

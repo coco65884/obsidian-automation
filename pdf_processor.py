@@ -53,8 +53,6 @@ def summarize_text(text, model_name="gemini-2.5-flash"):
     try:
         # まず利用可能なモデルを確認
         available_models = get_available_models()
-        if available_models:
-            print(f"利用可能なモデル: {available_models}")
 
         # モデル名を確認し、必要に応じて調整
         if model_name not in available_models:
@@ -69,6 +67,8 @@ def summarize_text(text, model_name="gemini-2.5-flash"):
                     break
             else:
                 print("エラー: 利用可能なモデルが見つかりません。")
+                if available_models:
+                    print(f"利用可能なモデル: {available_models}")
                 return None
 
         model = genai.GenerativeModel(model_name)

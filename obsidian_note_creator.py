@@ -279,8 +279,8 @@ def replace_zotero_placeholders(content, zotero_data):
 
     # {{bibliography.slice(4)}} のような特殊な記法を処理
     if '{{bibliography.slice(4)}}' in content:
-        content = content.replace(
-            '{{bibliography.slice(4)}}', '<!-- 参考文献は手動で追加してください -->')
+        citation = make_citation(zotero_data)
+        content = content.replace('{{bibliography.slice(4)}}', citation)
 
     # {% for type, creators in creators | groupby("creatorType") %} のような複雑な記法を処理
     if '{% for type, creators in creators | groupby("creatorType") %}' in content:
@@ -333,6 +333,84 @@ def replace_zotero_placeholders(content, zotero_data):
     return content
 
 
+def make_citation(zotero_data):
+    """Zoteroデータから引用形式を生成"""
+    if not zotero_data:
+        return "<!-- 参考文献は手動で追加してください -->"
+
+    # 著者名を取得（姓、名の順）
+    creators = zotero_data.get('creators', [])
+    author_names = []
+    for creator in creators:
+        if creator.get('creatorType') == 'author':
+            first = creator.get('firstName', '')
+            last = creator.get('lastName', '')
+            if first and last:
+                author_names.append(f"{last}, {first}")
+            elif last:
+                author_names.append(last)
+            elif first:
+                author_names.append(first)
+
+    # 基本情報を取得
+    title = zotero_data.get('title', '')
+    date = zotero_data.get('date', '')
+    year = date[:4] if date else ''
+    doi = zotero_data.get('DOI', '')
+    url = zotero_data.get('url', '')
+    item_type = zotero_data.get('itemType', '')
+
+    # 引用形式を構築（実際のノートの形式に合わせる）
+    citation_parts = []
+
+    # 著者名（最初の著者のみ）
+    if author_names:
+        first_author = author_names[0]
+        if len(author_names) > 1:
+            # 他の著者名を取得
+            other_authors = []
+            for i in range(1, len(author_names)):
+                name_parts = author_names[i].split(', ')
+                if len(name_parts) == 2:
+                    other_authors.append(name_parts[1] + ' ' + name_parts[0])
+                else:
+                    other_authors.append(author_names[i])
+
+            authors_str = first_author + ', ' + ', '.join(other_authors)
+        else:
+            authors_str = first_author
+
+        citation_parts.append(authors_str)
+
+    # タイトル（引用符付き）
+    if title:
+        citation_parts.append(f"'{title}'")
+
+    # 出版情報
+    if item_type == 'preprint':
+        citation_parts.append('arXiv')
+        if date:
+            month_names = ['', 'January', 'February', 'March', 'April', 'May',
+                           'June', 'July', 'August', 'September', 'October',
+                           'November', 'December']
+            date_parts = date.split('-')
+            day = date_parts[2]
+            month = month_names[int(date_parts[1])]
+            citation_parts.append(f"{day} {month} {year}")
+
+    # DOIまたはURL
+    if doi:
+        citation_parts.append(
+            f"[https://doi.org/{doi}](https://doi.org/{doi})")
+    elif url:
+        citation_parts.append(f"[{url}]({url})")
+
+    if citation_parts:
+        return '. '.join(citation_parts) + '.'
+    else:
+        return "<!-- 参考文献は手動で追加してください -->"
+
+
 def make_authors_block(creators):
     if not creators:
         return "  - ''"
@@ -349,16 +427,32 @@ def make_authors_block(creators):
 def make_info_block(zotero_data):
     creators = zotero_data.get('creators', [])
     lines = []
-    # 著者ごとに出力
+
+    # 著者を処理（FirstAuthor:: と Author:: の形式）
+    first_author = True
     for creator in creators:
-        creator_type = creator.get('creatorType', 'Author').capitalize()
-        last = creator.get('lastName', '')
-        first = creator.get('firstName', '')
-        name = creator.get('name', '')
-        if name:
-            lines.append(f'> **{creator_type}**: {name}')
-        elif last or first:
-            lines.append(f'> **{creator_type}**: {last}, {first}')
+        if creator.get('creatorType') == 'author':
+            last = creator.get('lastName', '')
+            first = creator.get('firstName', '')
+            name = creator.get('name', '')
+
+            if name:
+                author_name = name
+            elif last and first:
+                author_name = f"{last}, {first}"
+            elif last:
+                author_name = last
+            elif first:
+                author_name = first
+            else:
+                continue
+
+            if first_author:
+                lines.append(f'> **FirstAuthor**: {author_name}')
+                first_author = False
+            else:
+                lines.append(f'> **Author**: {author_name}')
+
     # その他の情報
     lines.append(f'> **Title**: {zotero_data.get("title", "")}')
     year = zotero_data.get("date", "")
@@ -368,13 +462,7 @@ def make_info_block(zotero_data):
         lines.append(f'> **Citekey**: {zotero_data.get("citekey", "")}')
     if zotero_data.get("itemType"):
         lines.append(f'> **itemType**: {zotero_data.get("itemType", "")}')
-    if zotero_data.get("itemType") == "journalArticle" and zotero_data.get("publicationTitle"):
-        lines.append(
-            f'> **Journal**: *{zotero_data.get("publicationTitle", "")}*')
-    if zotero_data.get("volume"):
-        lines.append(f'> **Volume**: {zotero_data.get("volume", "")}')
-    if zotero_data.get("issue"):
-        lines.append(f'> **Issue**: {zotero_data.get("issue", "")}')
+
     return '\n'.join(lines)
 
 
@@ -421,13 +509,13 @@ def create_obsidian_note(pdf_path, zotero_data, summary_text):
         content = content.replace("{title}", note_title)
 
         # >[!Overview]の部分に要約を挿入
-        if ">[!Overview]" in content:
+        if ">[!Overview]+" in content:
             if summary_text:
                 # [!Overview]を要約で置換
-                content = content.replace(">[!Overview]", summary_text)
+                content = content.replace(">[!Overview]+", summary_text)
             else:
                 # 要約がない場合は[!Overview]を削除
-                content = content.replace(">[!Overview]", "要約は生成されませんでした。")
+                content = content.replace(">[!Overview]+", "要約は生成されませんでした。")
 
         # Zoteroの{{}}記法を置換
         content = replace_zotero_placeholders(content, zotero_data)

@@ -25,27 +25,45 @@ def process_pdf(pdf_path):
         print(f"PDFを処理中: {pdf_path}")
 
         # 1. PDFからテキストを抽出
-        pdf_text = extract_text_from_pdf(pdf_path)
-        if not pdf_text:
-            print(f"エラー: {pdf_path} からテキストを抽出できませんでした。")
+        try:
+            pdf_text = extract_text_from_pdf(pdf_path)
+            if not pdf_text:
+                print(f"エラー: {pdf_path} からテキストを抽出できませんでした。")
+                return False
+        except Exception as e:
+            print(f"PDF読み込みエラー: {e}")
             return False
 
         # 2. テキストを要約
-        summary = summarize_text(pdf_text)
-        if not summary:
-            print(f"エラー: {pdf_path} の要約を生成できませんでした。")
-            return False
+        try:
+            summary = summarize_text(pdf_text)
+            if not summary:
+                print(f"エラー: {pdf_path} の要約を生成できませんでした。")
+                # 要約が失敗した場合でも、空の要約でノートを作成する
+                summary = "要約の生成に失敗しました。手動で要約を追加してください。"
+        except Exception as e:
+            print(f"要約生成エラー: {e}")
+            summary = "要約の生成中にエラーが発生しました。手動で要約を追加してください。"
 
         # 3. Zoteroから関連情報を取得
-        file_name_without_ext = os.path.splitext(os.path.basename(pdf_path))[0]
-        zotero_data = get_zotero_item_info(file_name_without_ext)
-        if not zotero_data:
-            print(
-                f"注意: Zoteroで '{file_name_without_ext}' に関連するアイテムが見つかりませんでした。")
+        try:
+            file_name_without_ext = os.path.splitext(
+                os.path.basename(pdf_path))[0]
+            zotero_data = get_zotero_item_info(file_name_without_ext)
+            if not zotero_data:
+                print(f"注意: Zoteroで '{file_name_without_ext}' に関連する"
+                      f"アイテムが見つかりませんでした。")
+        except Exception as e:
+            print(f"Zotero情報取得エラー: {e}")
+            zotero_data = None
 
         # 4. Obsidianノートを作成
-        create_obsidian_note(pdf_path, zotero_data, summary)
-        return True
+        try:
+            create_obsidian_note(pdf_path, zotero_data, summary)
+            return True
+        except Exception as e:
+            print(f"ノート作成エラー: {e}")
+            return False
 
     except Exception as e:
         print(f"PDF処理中に予期せぬエラーが発生しました: {e}")

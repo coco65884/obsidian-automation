@@ -27,16 +27,18 @@ class KeywordManager:
                 # 初期データ構造を作成
                 return {
                     "categories": {
-                        "field": ["CV", "NLP", "ML", "AI", "DataMining",
-                                  "ComputerVision", "NaturalLanguageProcessing",
-                                  "MachineLearning", "DeepLearning", "ReinforcementLearning"],
+                        "field": ["CV", "NLP", "RL", "Robotics", "HCI"],
                         "task": ["Classification", "Detection", "Segmentation",
                                  "SuperResolution", "SemanticSegmentation",
-                                 "ObjectDetection", "ImageGeneration", "TextGeneration",
-                                 "LanguageModeling", "QuestionAnswering"],
-                        "method": ["CNN", "RNN", "LSTM", "Transformer", "BERT",
-                                   "GPT", "ViT", "VisionTransformer", "DiffusionModel",
-                                   "GAN", "VAE", "Autoencoder", "ResNet", "UNet"]
+                                 "ObjectDetection", "ImageGeneration",
+                                 "TextGeneration", "LanguageModeling",
+                                 "QuestionAnswering", "ImageClassification",
+                                 "InstanceSegmentation", "PoseEstimation"],
+                        "method": ["CNN", "RNN", "LSTM", "Transformer",
+                                   "BERT", "GPT", "ViT", "VisionTransformer",
+                                   "DiffusionModel", "GAN", "VAE",
+                                   "Autoencoder", "ResNet", "UNet", "CLIP",
+                                   "YOLO", "RCNNs", "AttentionMechanism"]
                     },
                     "custom_keywords": [],
                     "aliases": {
@@ -58,12 +60,33 @@ class KeywordManager:
         """デフォルトのキーワードデータを取得"""
         return {
             "categories": {
-                "field": ["CV", "NLP", "ML"],
-                "task": ["Classification", "Detection", "Segmentation"],
-                "method": ["CNN", "Transformer", "ViT"]
+                "field": ["CV", "NLP", "RL", "Robotics", "HCI"],
+                "task": ["Classification", "Detection", "Segmentation",
+                         "SuperResolution", "SemanticSegmentation",
+                         "ObjectDetection", "ImageGeneration",
+                         "TextGeneration", "LanguageModeling",
+                         "QuestionAnswering", "ImageClassification",
+                         "InstanceSegmentation", "PoseEstimation"],
+                "method": ["CNN", "RNN", "LSTM", "Transformer",
+                           "BERT", "GPT", "ViT", "VisionTransformer",
+                           "DiffusionModel", "GAN", "VAE",
+                           "Autoencoder", "ResNet", "UNet", "CLIP",
+                           "YOLO", "RCNNs", "AttentionMechanism"]
             },
             "custom_keywords": [],
-            "aliases": {}
+            "aliases": {},
+            "prohibited_keywords": [
+                # 機械学習分野で自明すぎるキーワード（デフォルト値）
+                "AI", "ArtificialIntelligence", "MachineLearning", "ML",
+                "DeepLearning", "DL", "NeuralNetwork", "NeuralNetworks",
+                "Algorithm", "Algorithms", "Data", "DataScience",
+                "Learning", "Model", "Models", "Training", "Testing",
+                "Prediction", "Performance", "Accuracy", "Evaluation",
+                "Computer", "Computing", "Technology", "Method", "Methods",
+                "Approach", "Approaches", "Technique", "Techniques",
+                "Framework", "Frameworks", "System", "Systems",
+                "Analysis", "Research", "Study", "Experiment", "Experiments"
+            ]
         }
 
     def _save_keywords(self):
@@ -105,6 +128,29 @@ class KeywordManager:
 
         return similar_keywords
 
+    def _is_prohibited_keyword(self, keyword: str) -> bool:
+        """キーワードが禁止リストに含まれているかチェック"""
+        prohibited_list = self.keywords_data.get("prohibited_keywords", [])
+        normalized_keyword = keyword.lower()
+
+        for prohibited in prohibited_list:
+            if normalized_keyword == prohibited.lower():
+                return True
+
+        return False
+
+    def _filter_prohibited_keywords(self, keywords: List[str]) -> List[str]:
+        """禁止キーワードをフィルタリング"""
+        filtered_keywords = []
+
+        for keyword in keywords:
+            if self._is_prohibited_keyword(keyword):
+                print(f"禁止キーワードのためスキップしました: {keyword}")
+            else:
+                filtered_keywords.append(keyword)
+
+        return filtered_keywords
+
     def suggest_keywords(self, generated_keywords: List[str]) -> Tuple[List[str], List[str]]:
         """
         生成されたキーワードから既存キーワードを提案し、新規キーワードを特定
@@ -115,12 +161,21 @@ class KeywordManager:
         Returns:
             Tuple[既存キーワード, 新規キーワード]
         """
+        # まず禁止キーワードをフィルタリング
+        filtered_keywords = self._filter_prohibited_keywords(
+            generated_keywords)
+
         existing_keywords = []
         new_keywords = []
 
-        for keyword in generated_keywords:
+        for keyword in filtered_keywords:
             # キーワードを正規化
             normalized_keyword = self._normalize_keyword(keyword)
+
+            # 正規化後も禁止キーワードチェック
+            if self._is_prohibited_keyword(normalized_keyword):
+                print(f"正規化後に禁止キーワードと判定されました: {normalized_keyword}")
+                continue
 
             # 完全一致チェック
             found = False
@@ -152,8 +207,16 @@ class KeywordManager:
 
     def add_new_keywords(self, new_keywords: List[str], category: str = "custom"):
         """新規キーワードを追加"""
-        for keyword in new_keywords:
+        # 禁止キーワードをフィルタリング
+        filtered_keywords = self._filter_prohibited_keywords(new_keywords)
+
+        for keyword in filtered_keywords:
             normalized_keyword = self._normalize_keyword(keyword)
+
+            # 正規化後も禁止キーワードチェック
+            if self._is_prohibited_keyword(normalized_keyword):
+                print(f"禁止キーワードのため追加をスキップしました: {normalized_keyword}")
+                continue
 
             # カテゴリ指定がある場合はそちらに追加
             if category in self.keywords_data["categories"]:
@@ -170,6 +233,22 @@ class KeywordManager:
                     print(f"新規キーワード '{normalized_keyword}' をカスタムキーワードに追加しました")
 
         self._save_keywords()
+
+    def add_prohibited_keyword(self, keyword: str):
+        """禁止キーワードを追加"""
+        if "prohibited_keywords" not in self.keywords_data:
+            self.keywords_data["prohibited_keywords"] = []
+
+        if keyword not in self.keywords_data["prohibited_keywords"]:
+            self.keywords_data["prohibited_keywords"].append(keyword)
+            print(f"禁止キーワードに '{keyword}' を追加しました")
+            self._save_keywords()
+        else:
+            print(f"'{keyword}' は既に禁止キーワードに登録されています")
+
+    def get_prohibited_keywords(self) -> List[str]:
+        """禁止キーワードリストを取得"""
+        return self.keywords_data.get("prohibited_keywords", [])
 
     def get_required_categories(self) -> Dict[str, str]:
         """必須カテゴリの説明を取得"""

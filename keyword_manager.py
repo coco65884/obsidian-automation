@@ -50,7 +50,20 @@ class KeywordManager:
                         "MaskedAutoencoder": "MAE",
                         "GenerativeAdversarialNetwork": "GAN",
                         "VariationalAutoencoder": "VAE"
-                    }
+                    },
+                    "prohibited_keywords": [
+                        # 機械学習分野で自明すぎるキーワード（デフォルト値）
+                        "AI", "ArtificialIntelligence", "MachineLearning",
+                        "DeepLearning", "DL", "NeuralNetwork",
+                        "NeuralNetworks", "Algorithm", "Algorithms", "Data",
+                        "DataScience", "Learning", "Model", "Models",
+                        "Training", "Testing", "Prediction", "Performance",
+                        "Accuracy", "Evaluation", "Computer", "Computing",
+                        "Technology", "Method", "Methods", "Approach",
+                        "Approaches", "Technique", "Techniques", "Framework",
+                        "Frameworks", "System", "Systems", "Analysis",
+                        "Research", "Study", "Experiment", "Experiments"
+                    ]
                 }
         except Exception as e:
             print(f"キーワードファイルの読み込み中にエラーが発生しました: {e}")
@@ -78,14 +91,15 @@ class KeywordManager:
             "prohibited_keywords": [
                 # 機械学習分野で自明すぎるキーワード（デフォルト値）
                 "AI", "ArtificialIntelligence", "MachineLearning",
-                "DeepLearning", "DL", "NeuralNetwork", "NeuralNetworks",
-                "Algorithm", "Algorithms", "Data", "DataScience",
-                "Learning", "Model", "Models", "Training", "Testing",
-                "Prediction", "Performance", "Accuracy", "Evaluation",
-                "Computer", "Computing", "Technology", "Method", "Methods",
-                "Approach", "Approaches", "Technique", "Techniques",
-                "Framework", "Frameworks", "System", "Systems",
-                "Analysis", "Research", "Study", "Experiment", "Experiments"
+                "DeepLearning", "DL", "NeuralNetwork",
+                "NeuralNetworks", "Algorithm", "Algorithms", "Data",
+                "DataScience", "Learning", "Model", "Models",
+                "Training", "Testing", "Prediction", "Performance",
+                "Accuracy", "Evaluation", "Computer", "Computing",
+                "Technology", "Method", "Methods", "Approach",
+                "Approaches", "Technique", "Techniques", "Framework",
+                "Frameworks", "System", "Systems", "Analysis",
+                "Research", "Study", "Experiment", "Experiments"
             ]
         }
 

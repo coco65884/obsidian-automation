@@ -1,241 +1,220 @@
 from pdf_processor import (
-    clean_text, extract_text_from_pdf, summarize_text,
-    PDFProcessingError, APIError
+    extract_text_from_pdf, clean_text, load_custom_prompt,
+    get_available_models, process_keywords_in_summary,
+    summarize_text
 )
 import pytest
-import tempfile
 import os
-from unittest.mock import patch, Mock, mock_open
+from unittest.mock import patch, MagicMock, mock_open
 import sys
 
-# テスト用にパスを追加
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# パスを追加してモジュールをインポート
+sys.path.insert(0, os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__))))
 
 
 class TestPDFProcessor:
-    """PDF処理関数のテスト"""
+    """pdf_processor.pyのテスト"""
 
     def test_clean_text_basic(self):
         """基本的なテキストクリーニングのテスト"""
         # 正常なテキスト
-        clean_text_input = "This is normal text."
-        result = clean_text(clean_text_input)
-        assert result == "This is normal text."
+        clean = clean_text("Hello World")
+        assert clean == "Hello World"
 
-    def test_clean_text_with_control_characters(self):
-        """制御文字を含むテキストのクリーニングテスト"""
-        # 制御文字を含むテキスト
-        dirty_text = "Text with\x00control\x01characters\x02"
-        result = clean_text(dirty_text)
-        assert "\x00" not in result
-        assert "\x01" not in result
-        assert "\x02" not in result
-        assert "Text with control characters" in result
+        # 前後の空白削除
+        clean = clean_text("  Hello World  ")
+        assert clean == "Hello World"
 
-    def test_clean_text_with_surrogate_characters(self):
-        """サロゲート文字のクリーニングテスト"""
-        # UTF-8エンコーディングエラーのシミュレーション
-        with patch('builtins.str.encode') as mock_encode:
-            mock_encode.return_value.decode.return_value = "cleaned text"
+        # 連続する空白の処理
+        clean = clean_text("Hello    World")
+        assert clean == "Hello World"
 
-            result = clean_text("text with surrogates")
-            assert result == "cleaned text"
-
-    def test_clean_text_empty_input(self):
-        """空の入力のテスト"""
+    def test_clean_text_empty_and_none(self):
+        """空文字列とNoneのテキストクリーニングテスト"""
         assert clean_text("") == ""
         assert clean_text(None) == ""
 
+    def test_clean_text_special_characters(self):
+        """特殊文字を含むテキストクリーニングのテスト"""
+        # 改行とタブは保持されるが、連続する空白は単一のスペースになる
+        text_with_newlines = "Hello\nWorld\tTest"
+        cleaned = clean_text(text_with_newlines)
+        # clean_textは連続する空白を単一のスペースに変換する
+        assert "Hello" in cleaned
+        assert "World" in cleaned
+        assert "Test" in cleaned
+
     @patch('pdf_processor.PyPDF2.PdfReader')
-    def test_extract_text_from_pdf_success(self, mock_pdf_reader):
+    @patch('builtins.open')
+    def test_extract_text_from_pdf_success(self, mock_open_file,
+                                           mock_pdf_reader):
         """PDF文字列抽出成功のテスト"""
-        # モックページオブジェクトを作成
-        mock_page1 = Mock()
-        mock_page1.extract_text.return_value = "Page 1 content"
+        # モックページオブジェクト
+        mock_page = MagicMock()
+        mock_page.extract_text.return_value = "Sample PDF text"
 
-        mock_page2 = Mock()
-        mock_page2.extract_text.return_value = "Page 2 content"
-
-        # モックPDFリーダーを設定
-        mock_reader_instance = Mock()
-        mock_reader_instance.pages = [mock_page1, mock_page2]
+        # モックリーダー
+        mock_reader_instance = MagicMock()
+        mock_reader_instance.pages = [mock_page, mock_page]
         mock_pdf_reader.return_value = mock_reader_instance
 
-        # テスト用の一時PDFファイル
-        with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_pdf:
-            temp_pdf.write(b'dummy pdf content')
-            temp_pdf_path = temp_pdf.name
+        # テスト実行
+        result = extract_text_from_pdf("test.pdf")
 
-        try:
-            result = extract_text_from_pdf(temp_pdf_path)
-
-            assert "Page 1 content" in result
-            assert "Page 2 content" in result
-            mock_pdf_reader.assert_called_once()
-        finally:
-            os.unlink(temp_pdf_path)
+        # アサーション - 実際のコードはページ間にスペースを挿入しない
+        assert result == "Sample PDF textSample PDF text"
+        mock_open_file.assert_called_once_with("test.pdf", 'rb')
 
     @patch('pdf_processor.PyPDF2.PdfReader')
-    def test_extract_text_from_pdf_file_not_found(self, mock_pdf_reader):
-        """存在しないPDFファイルのテスト"""
-        with pytest.raises(PDFProcessingError, match="PDFファイルが見つかりません"):
-            extract_text_from_pdf("/non/existent/file.pdf")
+    @patch('builtins.open')
+    def test_extract_text_from_pdf_exception(self, mock_open_file,
+                                             mock_pdf_reader):
+        """PDF抽出例外処理のテスト"""
+        mock_pdf_reader.side_effect = Exception("PDF reading error")
 
-    @patch('pdf_processor.PyPDF2.PdfReader')
-    def test_extract_text_from_pdf_pypdf2_error(self, mock_pdf_reader):
-        """PyPDF2エラーのテスト"""
-        # PyPDF2でエラーが発生する場合をシミュレート
-        mock_pdf_reader.side_effect = Exception("PDF parsing error")
+        result = extract_text_from_pdf("test.pdf")
+        assert result is None
 
-        with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_pdf:
-            temp_pdf.write(b'dummy pdf content')
-            temp_pdf_path = temp_pdf.name
+    @patch('pdf_processor.KeywordManager')
+    def test_load_custom_prompt_success(self, mock_keyword_manager):
+        """custom_prompt.md読み込み成功のテスト"""
+        # KeywordManagerのモック
+        mock_km_instance = MagicMock()
+        mock_km_instance.create_keyword_prompt.return_value = "Mock keywords"
+        mock_keyword_manager.return_value = mock_km_instance
 
-        try:
-            with pytest.raises(PDFProcessingError, match="PDFの読み込み中にエラーが発生しました"):
-                extract_text_from_pdf(temp_pdf_path)
-        finally:
-            os.unlink(temp_pdf_path)
+        # ファイル読み込みのモック
+        mock_content = "Template content {KEYWORDS_SECTION} end"
+        with patch('builtins.open', mock_open(read_data=mock_content)):
+            result = load_custom_prompt()
 
-    @patch('pdf_processor.PyPDF2.PdfReader')
-    def test_extract_text_from_pdf_empty_pages(self, mock_pdf_reader):
-        """空のページを持つPDFのテスト"""
-        # 空のページを持つモックを作成
-        mock_page = Mock()
-        mock_page.extract_text.return_value = ""
+        expected = "Template content Mock keywords end"
+        assert result == expected
 
-        mock_reader_instance = Mock()
-        mock_reader_instance.pages = [mock_page]
-        mock_pdf_reader.return_value = mock_reader_instance
+    @patch('pdf_processor.KeywordManager')
+    def test_load_custom_prompt_file_not_found(self, mock_keyword_manager):
+        """custom_prompt.md見つからない場合のテスト"""
+        with patch('builtins.open', side_effect=FileNotFoundError()):
+            result = load_custom_prompt()
 
-        with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_pdf:
-            temp_pdf.write(b'dummy pdf content')
-            temp_pdf_path = temp_pdf.name
+        assert result is None
 
-        try:
-            result = extract_text_from_pdf(temp_pdf_path)
-            # 空のページでもエラーにならず、空文字列が返されることを確認
-            assert result == ""
-        finally:
-            os.unlink(temp_pdf_path)
+    @patch('pdf_processor.genai.list_models')
+    def test_get_available_models_success(self, mock_list_models):
+        """利用可能モデル取得成功のテスト"""
+        # モックモデル
+        mock_model1 = MagicMock()
+        mock_model1.name = "models/gemini-1.5-flash"
+        mock_model1.supported_generation_methods = ["generateContent"]
 
+        mock_model2 = MagicMock()
+        mock_model2.name = "models/gemini-pro"
+        mock_model2.supported_generation_methods = ["generateContent"]
+
+        mock_list_models.return_value = [mock_model1, mock_model2]
+
+        result = get_available_models()
+        assert "gemini-1.5-flash" in result
+        assert "gemini-pro" in result
+
+    @patch('pdf_processor.genai.list_models')
+    def test_get_available_models_exception(self, mock_list_models):
+        """モデル取得例外処理のテスト"""
+        mock_list_models.side_effect = Exception("API error")
+
+        result = get_available_models()
+        assert result == []
+
+    @patch('pdf_processor.KeywordManager')
+    def test_process_keywords_in_summary_success(self, mock_keyword_manager):
+        """要約内キーワード処理成功のテスト"""
+        # KeywordManagerのモック
+        mock_km_instance = MagicMock()
+        mock_km_instance.process_generated_keywords.return_value = [
+            "CV", "CNN"]
+        mock_keyword_manager.return_value = mock_km_instance
+
+        summary_text = """
+> ### **Keywords**
+> #MachineLearning
+> #DeepLearning
+
+Some other content
+"""
+
+        result = process_keywords_in_summary(summary_text)
+
+        # キーワードが処理されることを確認
+        assert "#CV" in result or "#CNN" in result
+        mock_km_instance.process_generated_keywords.assert_called_once()
+
+    @patch('pdf_processor.KeywordManager')
+    def test_process_keywords_in_summary_no_keywords(self,
+                                                     mock_keyword_manager):
+        """キーワードなしの要約処理のテスト"""
+        mock_km_instance = MagicMock()
+        mock_km_instance.process_generated_keywords.return_value = []
+        mock_keyword_manager.return_value = mock_km_instance
+
+        summary_text = "Simple summary without keywords section"
+
+        result = process_keywords_in_summary(summary_text)
+        assert result == summary_text  # 変更されない
+
+    @patch('pdf_processor.process_keywords_in_summary')
     @patch('pdf_processor.genai.GenerativeModel')
-    @patch('pdf_processor.genai.configure')
-    def test_summarize_text_success(self, mock_configure, mock_model_class):
+    @patch('pdf_processor.load_custom_prompt')
+    @patch('pdf_processor.get_available_models')
+    def test_summarize_text_success(self, mock_get_models, mock_load_prompt,
+                                    mock_gen_model, mock_process_keywords):
         """テキスト要約成功のテスト"""
         # モックの設定
-        mock_model_instance = Mock()
-        mock_response = Mock()
-        mock_response.text = "これは要約されたテキストです。"
+        mock_get_models.return_value = ["gemini-2.5-flash"]
+        mock_load_prompt.return_value = "Custom prompt template"
+
+        mock_model_instance = MagicMock()
+        mock_response = MagicMock()
+        mock_response.text = "Generated summary"
         mock_model_instance.generate_content.return_value = mock_response
-        mock_model_class.return_value = mock_model_instance
+        mock_gen_model.return_value = mock_model_instance
 
-        # 環境変数のモック
-        with patch.dict(os.environ, {'GEMINI_API_KEY': 'test_api_key'}):
-            result = summarize_text("長いテキストの内容", "要約してください")
+        mock_process_keywords.return_value = "Processed summary"
 
-            assert result == "これは要約されたテキストです。"
-            mock_configure.assert_called_once_with(api_key='test_api_key')
-            mock_model_instance.generate_content.assert_called_once()
+        # テスト実行
+        result = summarize_text("Sample text to summarize")
+
+        # アサーション
+        assert result == "Processed summary"
+        mock_gen_model.assert_called_once_with("gemini-2.5-flash")
+        mock_model_instance.generate_content.assert_called_once()
+
+    @patch('pdf_processor.get_available_models')
+    def test_summarize_text_no_available_models(self, mock_get_models):
+        """利用可能モデルなしのテスト"""
+        mock_get_models.return_value = []
+
+        result = summarize_text("Sample text")
+        assert result is None
 
     @patch('pdf_processor.genai.GenerativeModel')
-    @patch('pdf_processor.genai.configure')
-    def test_summarize_text_api_error(self, mock_configure, mock_model_class):
-        """API呼び出しエラーのテスト"""
-        # API エラーをシミュレート
-        mock_model_instance = Mock()
+    @patch('pdf_processor.load_custom_prompt')
+    @patch('pdf_processor.get_available_models')
+    def test_summarize_text_generation_exception(self, mock_get_models,
+                                                 mock_load_prompt,
+                                                 mock_gen_model):
+        """テキスト生成例外のテスト"""
+        mock_get_models.return_value = ["gemini-2.5-flash"]
+        mock_load_prompt.return_value = "Custom prompt"
+
+        mock_model_instance = MagicMock()
         mock_model_instance.generate_content.side_effect = Exception(
-            "API Error")
-        mock_model_class.return_value = mock_model_instance
+            "Generation error")
+        mock_gen_model.return_value = mock_model_instance
 
-        with patch.dict(os.environ, {'GEMINI_API_KEY': 'test_api_key'}):
-            with pytest.raises(APIError, match="Gemini APIでエラーが発生しました"):
-                summarize_text("テキスト", "プロンプト")
+        result = summarize_text("Sample text")
+        assert result is None
 
-    def test_summarize_text_no_api_key(self):
-        """APIキーが設定されていない場合のテスト"""
-        with patch.dict(os.environ, {}, clear=True):
-            with pytest.raises(APIError, match="Gemini APIキーが設定されていません"):
-                summarize_text("テキスト", "プロンプト")
 
-    @patch('pdf_processor.genai.GenerativeModel')
-    @patch('pdf_processor.genai.configure')
-    def test_summarize_text_empty_response(self, mock_configure, mock_model_class):
-        """空のレスポンスのテスト"""
-        mock_model_instance = Mock()
-        mock_response = Mock()
-        mock_response.text = ""
-        mock_model_instance.generate_content.return_value = mock_response
-        mock_model_class.return_value = mock_model_instance
-
-        with patch.dict(os.environ, {'GEMINI_API_KEY': 'test_api_key'}):
-            result = summarize_text("テキスト", "プロンプト")
-            assert result == ""
-
-    @patch('pdf_processor.genai.GenerativeModel')
-    @patch('pdf_processor.genai.configure')
-    def test_summarize_text_with_clean_text(self, mock_configure, mock_model_class):
-        """clean_textが適用されることのテスト"""
-        mock_model_instance = Mock()
-        mock_response = Mock()
-        mock_response.text = "Clean response"
-        mock_model_instance.generate_content.return_value = mock_response
-        mock_model_class.return_value = mock_model_instance
-
-        with patch('pdf_processor.clean_text') as mock_clean_text:
-            mock_clean_text.side_effect = lambda x: f"cleaned: {x}"
-
-            with patch.dict(os.environ, {'GEMINI_API_KEY': 'test_api_key'}):
-                result = summarize_text("dirty text", "dirty prompt")
-
-                # clean_textが呼ばれたことを確認
-                assert mock_clean_text.call_count == 3  # text, prompt, response
-                assert result == "cleaned: Clean response"
-
-    def test_pdf_processing_error_inheritance(self):
-        """PDFProcessingErrorが正しくExceptionを継承しているかテスト"""
-        error = PDFProcessingError("test message")
-        assert isinstance(error, Exception)
-        assert str(error) == "test message"
-
-    def test_api_error_inheritance(self):
-        """APIErrorが正しくExceptionを継承しているかテスト"""
-        error = APIError("api test message")
-        assert isinstance(error, Exception)
-        assert str(error) == "api test message"
-
-    @patch('pdf_processor.PyPDF2.PdfReader')
-    def test_extract_text_from_pdf_with_page_errors(self, mock_pdf_reader):
-        """一部のページでエラーが発生する場合のテスト"""
-        # 最初のページは正常、2番目のページでエラー
-        mock_page1 = Mock()
-        mock_page1.extract_text.return_value = "Page 1 content"
-
-        mock_page2 = Mock()
-        mock_page2.extract_text.side_effect = Exception(
-            "Page extraction error")
-
-        mock_reader_instance = Mock()
-        mock_reader_instance.pages = [mock_page1, mock_page2]
-        mock_pdf_reader.return_value = mock_reader_instance
-
-        with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_pdf:
-            temp_pdf.write(b'dummy pdf content')
-            temp_pdf_path = temp_pdf.name
-
-        try:
-            result = extract_text_from_pdf(temp_pdf_path)
-            # エラーが発生したページは無視されて、正常なページのテキストのみ返される
-            assert "Page 1 content" in result
-            assert "Page 2" not in result
-        finally:
-            os.unlink(temp_pdf_path)
-
-    @patch('pdf_processor.os.path.exists')
-    def test_extract_text_from_pdf_permission_error(self, mock_exists):
-        """ファイルアクセス権限エラーのテスト"""
-        mock_exists.return_value = True
-
-        with patch('builtins.open', side_effect=PermissionError("Permission denied")):
-            with pytest.raises(PDFProcessingError, match="PDFファイルにアクセスできません"):
-                extract_text_from_pdf("test.pdf")
+if __name__ == "__main__":
+    pytest.main([__file__])

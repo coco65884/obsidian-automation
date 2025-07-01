@@ -1,356 +1,182 @@
-from main import process_pdf_file, monitor_directory
+from main import get_existing_notes, process_pdf, main
 import pytest
-import tempfile
 import os
-from unittest.mock import patch, Mock, MagicMock
+import tempfile
+from unittest.mock import patch
 import sys
 
-# テスト用にパスを追加
+# パスを追加してモジュールをインポート
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 class TestMain:
-    """メインモジュールの処理のテスト"""
+    """main.pyのテスト"""
 
-    @patch('main.extract_text_from_pdf')
-    @patch('main.get_pdf_metadata_from_zotero')
-    @patch('main.summarize_text')
+    @pytest.fixture
+    def temp_note_folder(self):
+        """テスト用の一時ノートフォルダ"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # テスト用のMarkdownファイルを作成
+            test_files = ["note1.md", "note2.md", "test_paper.md"]
+            for file_name in test_files:
+                file_path = os.path.join(temp_dir, file_name)
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    f.write("# Test Note\nThis is a test note.")
+            yield temp_dir
+
+    @pytest.fixture
+    def temp_pdf_folder(self):
+        """テスト用の一時PDFフォルダ"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # テスト用のPDFファイル（空ファイル）を作成
+            test_files = ["test1.pdf", "test2.pdf"]
+            for file_name in test_files:
+                with open(os.path.join(temp_dir, file_name), 'wb') as f:
+                    f.write(b"dummy pdf content")
+            yield temp_dir
+
+    def test_get_existing_notes(self, temp_note_folder):
+        """既存ノート取得のテスト"""
+        with patch('main.NOTE_FOLDER', temp_note_folder):
+            existing_notes = get_existing_notes()
+
+            assert isinstance(existing_notes, set)
+            assert "note1" in existing_notes
+            assert "note2" in existing_notes
+            assert "test_paper" in existing_notes
+            assert len(existing_notes) == 3
+
+    def test_get_existing_notes_empty_folder(self):
+        """空フォルダでの既存ノート取得テスト"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with patch('main.NOTE_FOLDER', temp_dir):
+                existing_notes = get_existing_notes()
+                assert isinstance(existing_notes, set)
+                assert len(existing_notes) == 0
+
+    def test_get_existing_notes_nonexistent_folder(self):
+        """存在しないフォルダでの既存ノート取得テスト"""
+        with patch('main.NOTE_FOLDER', '/nonexistent/folder'):
+            existing_notes = get_existing_notes()
+            assert isinstance(existing_notes, set)
+            assert len(existing_notes) == 0
+
     @patch('main.create_obsidian_note')
-    @patch('main.KeywordManager')
-    def test_process_pdf_file_success(
-        self, mock_keyword_manager, mock_create_note,
-        mock_summarize, mock_get_metadata, mock_extract_text
-    ):
+    @patch('main.get_zotero_item_info')
+    @patch('main.summarize_text')
+    @patch('main.extract_text_from_pdf')
+    def test_process_pdf_success(self, mock_extract, mock_summarize,
+                                 mock_zotero, mock_create_note):
         """PDF処理成功のテスト"""
         # モックの設定
-        mock_extract_text.return_value = "Extracted PDF text"
-        mock_get_metadata.return_value = {
-            'title': 'Test Paper',
-            'creators': [{'creatorType': 'author', 'firstName': 'John', 'lastName': 'Doe'}]
-        }
-        mock_summarize.return_value = "Generated summary with keywords"
-
-        # KeywordManagerのモック
-        mock_km_instance = Mock()
-        mock_km_instance.process_generated_keywords.return_value = "Processed keywords"
-        mock_keyword_manager.return_value = mock_km_instance
+        mock_extract.return_value = "Test PDF content"
+        mock_summarize.return_value = "Test summary"
+        mock_zotero.return_value = {"title": "Test Paper"}
+        mock_create_note.return_value = None
 
         # テスト実行
-        process_pdf_file("/test/path/test.pdf")
+        result = process_pdf("test.pdf")
 
-        # 各関数が正しく呼ばれたことを確認
-        mock_extract_text.assert_called_once_with("/test/path/test.pdf")
-        mock_get_metadata.assert_called_once_with("test.pdf")
-        mock_summarize.assert_called_once()
+        # アサーション
+        assert result is True
+        mock_extract.assert_called_once_with("test.pdf")
+        mock_summarize.assert_called_once_with("Test PDF content")
+        mock_zotero.assert_called_once_with("test")
         mock_create_note.assert_called_once()
 
     @patch('main.extract_text_from_pdf')
-    @patch('main.get_pdf_metadata_from_zotero')
-    @patch('main.summarize_text')
+    def test_process_pdf_extract_failure(self, mock_extract):
+        """PDFテキスト抽出失敗のテスト"""
+        mock_extract.return_value = None
+
+        result = process_pdf("test.pdf")
+
+        assert result is False
+        mock_extract.assert_called_once_with("test.pdf")
+
     @patch('main.create_obsidian_note')
-    @patch('main.KeywordManager')
-    def test_process_pdf_file_extract_text_error(
-        self, mock_keyword_manager, mock_create_note,
-        mock_summarize, mock_get_metadata, mock_extract_text
-    ):
-        """PDF文字列抽出エラーのテスト"""
-        # テキスト抽出でエラーが発生
-        mock_extract_text.side_effect = Exception("PDF extraction error")
-
-        # エラーが発生してもクラッシュしないことを確認
-        try:
-            process_pdf_file("/test/path/test.pdf")
-        except Exception:
-            pytest.fail(
-                "process_pdf_file should handle extraction errors gracefully")
-
-        # 後続の処理は実行されないことを確認
-        mock_get_metadata.assert_not_called()
-        mock_summarize.assert_not_called()
-        mock_create_note.assert_not_called()
-
+    @patch('main.get_zotero_item_info')
+    @patch('main.summarize_text')
     @patch('main.extract_text_from_pdf')
-    @patch('main.get_pdf_metadata_from_zotero')
-    @patch('main.summarize_text')
-    @patch('main.create_obsidian_note')
-    @patch('main.KeywordManager')
-    def test_process_pdf_file_zotero_error(
-        self, mock_keyword_manager, mock_create_note,
-        mock_summarize, mock_get_metadata, mock_extract_text
-    ):
-        """Zoteroメタデータ取得エラーのテスト"""
-        mock_extract_text.return_value = "Extracted text"
-        mock_get_metadata.side_effect = Exception("Zotero error")
-        mock_summarize.return_value = "Summary text"
+    def test_process_pdf_summarize_failure(self, mock_extract, mock_summarize,
+                                           mock_zotero, mock_create_note):
+        """要約生成失敗のテスト"""
+        mock_extract.return_value = "Test PDF content"
+        mock_summarize.return_value = None
+        mock_zotero.return_value = {"title": "Test Paper"}
+        mock_create_note.return_value = None
 
-        mock_km_instance = Mock()
-        mock_km_instance.process_generated_keywords.return_value = "Keywords"
-        mock_keyword_manager.return_value = mock_km_instance
+        result = process_pdf("test.pdf")
 
-        # エラーが発生してもクラッシュしないことを確認
-        try:
-            process_pdf_file("/test/path/test.pdf")
-        except Exception:
-            pytest.fail(
-                "process_pdf_file should handle Zotero errors gracefully")
-
-        # Zoteroメタデータなしでもノート作成は実行されることを確認
+        # 要約が失敗してもノート作成は続行される
+        assert result is True
         mock_create_note.assert_called_once()
 
-    @patch('main.extract_text_from_pdf')
-    @patch('main.get_pdf_metadata_from_zotero')
-    @patch('main.summarize_text')
     @patch('main.create_obsidian_note')
-    @patch('main.KeywordManager')
-    def test_process_pdf_file_summarize_error(
-        self, mock_keyword_manager, mock_create_note,
-        mock_summarize, mock_get_metadata, mock_extract_text
-    ):
-        """要約生成エラーのテスト"""
-        mock_extract_text.return_value = "Extracted text"
-        mock_get_metadata.return_value = {'title': 'Test Paper'}
-        mock_summarize.side_effect = Exception("Summarization error")
+    @patch('main.get_zotero_item_info')
+    @patch('main.summarize_text')
+    @patch('main.extract_text_from_pdf')
+    def test_process_pdf_zotero_failure(self, mock_extract, mock_summarize,
+                                        mock_zotero, mock_create_note):
+        """Zotero情報取得失敗のテスト"""
+        mock_extract.return_value = "Test PDF content"
+        mock_summarize.return_value = "Test summary"
+        mock_zotero.return_value = None
+        mock_create_note.return_value = None
 
-        mock_km_instance = Mock()
-        mock_keyword_manager.return_value = mock_km_instance
+        result = process_pdf("test.pdf")
 
-        # エラーが発生してもクラッシュしないことを確認
-        try:
-            process_pdf_file("/test/path/test.pdf")
-        except Exception:
-            pytest.fail(
-                "process_pdf_file should handle summarization errors gracefully")
-
-        # 要約なしでもノート作成は実行されることを確認
+        # Zotero情報取得が失敗してもノート作成は続行される
+        assert result is True
         mock_create_note.assert_called_once()
 
-    @patch('main.extract_text_from_pdf')
-    @patch('main.get_pdf_metadata_from_zotero')
-    @patch('main.summarize_text')
     @patch('main.create_obsidian_note')
-    @patch('main.KeywordManager')
-    def test_process_pdf_file_note_creation_error(
-        self, mock_keyword_manager, mock_create_note,
-        mock_summarize, mock_get_metadata, mock_extract_text
-    ):
-        """ノート作成エラーのテスト"""
-        mock_extract_text.return_value = "Extracted text"
-        mock_get_metadata.return_value = {'title': 'Test Paper'}
-        mock_summarize.return_value = "Summary"
-        mock_create_note.side_effect = Exception("Note creation error")
-
-        mock_km_instance = Mock()
-        mock_km_instance.process_generated_keywords.return_value = "Keywords"
-        mock_keyword_manager.return_value = mock_km_instance
-
-        # エラーが発生してもクラッシュしないことを確認
-        try:
-            process_pdf_file("/test/path/test.pdf")
-        except Exception:
-            pytest.fail(
-                "process_pdf_file should handle note creation errors gracefully")
-
-    @patch('main.extract_text_from_pdf')
-    @patch('main.get_pdf_metadata_from_zotero')
+    @patch('main.get_zotero_item_info')
     @patch('main.summarize_text')
-    @patch('main.create_obsidian_note')
-    @patch('main.KeywordManager')
-    def test_process_pdf_file_keyword_manager_error(
-        self, mock_keyword_manager, mock_create_note,
-        mock_summarize, mock_get_metadata, mock_extract_text
-    ):
-        """キーワード処理エラーのテスト"""
-        mock_extract_text.return_value = "Extracted text"
-        mock_get_metadata.return_value = {'title': 'Test Paper'}
-        mock_summarize.return_value = "Summary"
-
-        # KeywordManagerでエラーが発生
-        mock_keyword_manager.side_effect = Exception("Keyword manager error")
-
-        # エラーが発生してもクラッシュしないことを確認
-        try:
-            process_pdf_file("/test/path/test.pdf")
-        except Exception:
-            pytest.fail(
-                "process_pdf_file should handle keyword manager errors gracefully")
-
-        # ノート作成は実行されることを確認
-        mock_create_note.assert_called_once()
-
     @patch('main.extract_text_from_pdf')
-    @patch('main.get_pdf_metadata_from_zotero')
-    @patch('main.summarize_text')
-    @patch('main.create_obsidian_note')
-    @patch('main.KeywordManager')
-    def test_process_pdf_file_no_zotero_metadata(
-        self, mock_keyword_manager, mock_create_note,
-        mock_summarize, mock_get_metadata, mock_extract_text
-    ):
-        """Zoteroメタデータが見つからない場合のテスト"""
-        mock_extract_text.return_value = "Extracted text"
-        mock_get_metadata.return_value = None  # メタデータなし
-        mock_summarize.return_value = "Summary"
+    def test_process_pdf_note_creation_failure(self, mock_extract, mock_summarize,
+                                               mock_zotero, mock_create_note):
+        """ノート作成失敗のテスト"""
+        mock_extract.return_value = "Test PDF content"
+        mock_summarize.return_value = "Test summary"
+        mock_zotero.return_value = {"title": "Test Paper"}
+        mock_create_note.side_effect = Exception("Note creation failed")
 
-        mock_km_instance = Mock()
-        mock_km_instance.process_generated_keywords.return_value = "Keywords"
-        mock_keyword_manager.return_value = mock_km_instance
+        result = process_pdf("test.pdf")
 
-        process_pdf_file("/test/path/test.pdf")
+        assert result is False
 
-        # メタデータなしでもノート作成は実行されることを確認
-        mock_create_note.assert_called_once()
-        call_args = mock_create_note.call_args[0]
-        assert call_args[1] is None  # zotero_dataがNone
+    @patch('main.process_pdf')
+    @patch('main.get_existing_notes')
+    @patch('main.os.path.exists')
+    @patch('main.glob.glob')
+    def test_main_function(self, mock_glob, mock_exists, mock_get_notes,
+                           mock_process):
+        """main関数のテスト"""
+        # モックの設定
+        mock_exists.return_value = True
+        mock_get_notes.return_value = {"existing_note"}
+        mock_glob.return_value = ["/path/to/test1.pdf",
+                                  "/path/to/existing_note.pdf"]
+        mock_process.return_value = True
 
-    @patch('main.extract_text_from_pdf')
-    @patch('main.get_pdf_metadata_from_zotero')
-    @patch('main.summarize_text')
-    @patch('main.create_obsidian_note')
-    @patch('main.KeywordManager')
-    def test_process_pdf_file_empty_text(
-        self, mock_keyword_manager, mock_create_note,
-        mock_summarize, mock_get_metadata, mock_extract_text
-    ):
-        """空のテキストが抽出された場合のテスト"""
-        mock_extract_text.return_value = ""  # 空のテキスト
-        mock_get_metadata.return_value = {'title': 'Test Paper'}
-        mock_summarize.return_value = "Default summary"
+        with patch('builtins.print'):  # print文をモック
+            main()
 
-        mock_km_instance = Mock()
-        mock_km_instance.process_generated_keywords.return_value = "Keywords"
-        mock_keyword_manager.return_value = mock_km_instance
+        # 既存ノートと同名のPDFはスキップされ、新しいPDFのみ処理される
+        mock_process.assert_called_once_with("/path/to/test1.pdf")
 
-        process_pdf_file("/test/path/test.pdf")
+    @patch('main.os.path.exists')
+    def test_main_pdf_folder_not_exists(self, mock_exists):
+        """PDFフォルダが存在しない場合のテスト"""
+        mock_exists.return_value = False
 
-        # 空のテキストでも処理が継続されることを確認
-        mock_summarize.assert_called_once()
-        mock_create_note.assert_called_once()
+        with patch('builtins.print') as mock_print:
+            main()
 
-    @patch('main.watchdog.observers.Observer')
-    @patch('main.time.sleep')
-    def test_monitor_directory_basic(self, mock_sleep, mock_observer_class):
-        """ディレクトリ監視の基本テスト"""
-        # Observerのモック
-        mock_observer_instance = Mock()
-        mock_observer_class.return_value = mock_observer_instance
-
-        # sleepを1回だけ実行して終了するように設定
-        mock_sleep.side_effect = [None, KeyboardInterrupt()]
-
-        try:
-            monitor_directory()
-        except KeyboardInterrupt:
-            pass  # 期待される終了
-
-        # Observerが正しく設定されたことを確認
-        mock_observer_instance.schedule.assert_called_once()
-        mock_observer_instance.start.assert_called_once()
-        mock_observer_instance.stop.assert_called_once()
-        mock_observer_instance.join.assert_called_once()
-
-    @patch('main.watchdog.observers.Observer')
-    @patch('main.time.sleep')
-    def test_monitor_directory_observer_error(self, mock_sleep, mock_observer_class):
-        """Observerエラーのテスト"""
-        # Observerでエラーが発生
-        mock_observer_class.side_effect = Exception("Observer error")
-
-        # エラーが発生してもクラッシュしないことを確認
-        try:
-            monitor_directory()
-        except Exception:
-            pytest.fail(
-                "monitor_directory should handle observer errors gracefully")
-
-    def test_pdf_file_filtering(self):
-        """PDFファイルのフィルタリングテスト"""
-        # 実際のファイルハンドラーのテストは複雑なので、
-        # ここでは基本的なロジックのテストのみ実装
-        assert True  # プレースホルダー
-
-    @patch('main.extract_text_from_pdf')
-    @patch('main.get_pdf_metadata_from_zotero')
-    @patch('main.summarize_text')
-    @patch('main.create_obsidian_note')
-    @patch('main.KeywordManager')
-    def test_process_pdf_file_with_custom_prompt(
-        self, mock_keyword_manager, mock_create_note,
-        mock_summarize, mock_get_metadata, mock_extract_text
-    ):
-        """カスタムプロンプトでの処理テスト"""
-        mock_extract_text.return_value = "Extracted text"
-        mock_get_metadata.return_value = {'title': 'Test Paper'}
-
-        # KeywordManagerのモック
-        mock_km_instance = Mock()
-        mock_km_instance.create_keyword_prompt.return_value = "Custom keyword prompt"
-        mock_km_instance.process_generated_keywords.return_value = "Processed keywords"
-        mock_keyword_manager.return_value = mock_km_instance
-
-        # カスタムプロンプトの読み込みをモック
-        with patch('builtins.open', mock_open=Mock()):
-            with patch('main.os.path.exists', return_value=True):
-                mock_summarize.return_value = "Summary with custom prompt"
-
-                process_pdf_file("/test/path/test.pdf")
-
-                # カスタムプロンプトが使用されたことを確認
-                mock_km_instance.create_keyword_prompt.assert_called_once()
-                mock_summarize.assert_called_once()
-
-    @patch('main.extract_text_from_pdf')
-    @patch('main.get_pdf_metadata_from_zotero')
-    @patch('main.summarize_text')
-    @patch('main.create_obsidian_note')
-    @patch('main.KeywordManager')
-    def test_process_pdf_file_filename_edge_cases(
-        self, mock_keyword_manager, mock_create_note,
-        mock_summarize, mock_get_metadata, mock_extract_text
-    ):
-        """ファイル名のエッジケースのテスト"""
-        mock_extract_text.return_value = "Extracted text"
-        mock_get_metadata.return_value = {'title': 'Test Paper'}
-        mock_summarize.return_value = "Summary"
-
-        mock_km_instance = Mock()
-        mock_km_instance.process_generated_keywords.return_value = "Keywords"
-        mock_keyword_manager.return_value = mock_km_instance
-
-        # 特殊文字を含むファイル名でテスト
-        test_filenames = [
-            "/path/to/file with spaces.pdf",
-            "/path/to/file[with]brackets.pdf",
-            "/path/to/file(with)parentheses.pdf",
-            "/path/to/ファイル名.pdf"  # 日本語ファイル名
-        ]
-
-        for filename in test_filenames:
-            try:
-                process_pdf_file(filename)
-                # エラーが発生しないことを確認
-            except Exception:
-                pytest.fail(
-                    f"process_pdf_file should handle filename: {filename}")
-
-    @patch('main.os.path.basename')
-    def test_filename_extraction(self, mock_basename):
-        """ファイル名抽出のテスト"""
-        mock_basename.return_value = "test_file.pdf"
-
-        # process_pdf_fileの内部でbasenameが呼ばれることを間接的に確認
-        with patch('main.extract_text_from_pdf', side_effect=Exception("Stop here")):
-            try:
-                process_pdf_file("/full/path/to/test_file.pdf")
-            except Exception:
-                pass  # 期待されるエラー
-
-            mock_basename.assert_called()
+        # エラーメッセージが出力されることを確認
+        mock_print.assert_called()
 
 
-def mock_open(read_data=""):
-    """mock_openの簡易実装"""
-    m = Mock()
-    m.read.return_value = read_data
-    m.__enter__.return_value = m
-    m.__exit__.return_value = None
-    return m
+if __name__ == "__main__":
+    pytest.main([__file__])

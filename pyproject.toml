@@ -11,3 +11,9 @@ dependencies = [
     "pyzotero>=1.6.11",
     "watchdog>=6.0.0",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1",
+    "pytest-mock>=3.14.1",
+]

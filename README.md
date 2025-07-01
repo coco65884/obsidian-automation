@@ -1,0 +1,243 @@
+# Obsidian Automation
+
+研究論文のPDFファイルを自動的に処理して、Obsidianノートを生成するPythonツールです。Zoteroからメタデータを取得、Google Gemini APIを使用した要約生成、キーワード管理機能を提供します。
+
+## 🚀 主な機能
+
+- **PDF自動処理**: PDFファイルからテキストを抽出
+- **AI要約生成**: Google Gemini APIを使用した論文要約の自動生成
+- **Zotero統合**: Zoteroライブラリから論文メタデータを自動取得
+- **キーワード管理**: 機械学習キーワードの自動抽出・管理
+- **Obsidianノート生成**: 構造化されたMarkdownノートの自動作成
+- **テンプレート対応**: カスタマイズ可能なノートテンプレート
+
+## 📋 前提条件
+
+- Python 3.11 以上
+- [uv](https://github.com/astral-sh/uv) パッケージマネージャー
+- Google Gemini API アクセス
+- Zotero アカウント
+- Obsidian (ノート管理用)
+
+## 🛠 環境設定
+
+### 1. uvのインストール
+
+uvがインストールされていない場合は、以下のコマンドでインストールしてください：
+
+```bash
+# macOS/Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Windows (PowerShell)
+irm https://astral.sh/uv/install.ps1 | iex
+
+# Homebrew (macOS)
+brew install uv
+
+# pipx経由
+pipx install uv
+```
+
+### 2. プロジェクトのクローンと依存関係のインストール
+
+```bash
+# リポジトリをクローン
+git clone https://github.com/YOUR_USERNAME/obsidian-automation.git
+cd obsidian-automation
+
+# 依存関係をインストール
+uv sync
+```
+
+### 3. 環境変数ファイル（.env）の作成
+
+プロジェクトルートに `.env` ファイルを作成し、以下の環境変数を設定してください：
+
+```bash
+# .env ファイルの例
+ZOTERO_API_KEY=your_zotero_api_key_here
+ZOTERO_USER_ID=your_zotero_user_id_here
+GEMINI_API_KEY=your_gemini_api_key_here
+PDF_FOLDER=/path/to/your/pdf/folder
+NOTE_FOLDER=/path/to/your/obsidian/vault/folder
+TEMPLATE_PATH=./template.md
+```
+
+## 🔑 APIキーの取得方法
+
+### Google Gemini API キー
+
+1. [Google AI Studio](https://aistudio.google.com/) にアクセス
+2. Googleアカウントでログイン
+3. 「Get API key」をクリック
+4. 「Create API key」を選択
+5. プロジェクトを選択（新規作成も可能）
+6. 生成されたAPIキーをコピーして `.env` ファイルの `GEMINI_API_KEY` に設定
+
+### Zotero API キーとユーザーID
+
+#### APIキーの取得：
+1. [Zotero](https://www.zotero.org/) にログイン
+2. [Settings > Feeds/API](https://www.zotero.org/settings/keys) にアクセス
+3. 「Create new private key」をクリック
+4. 必要な権限を設定：
+   - **Personal Library**: Read access
+   - **Default Group Permissions**: Read access (グループライブラリを使用する場合)
+5. 「Save Key」をクリック
+6. 生成されたAPIキーをコピーして `.env` ファイルの `ZOTERO_API_KEY` に設定
+
+#### ユーザーIDの取得：
+1. Zoteroにログイン後、[Feeds/API settings](https://www.zotero.org/settings/keys) ページにアクセス
+2. ページ上部に表示される「Your userID for use in API calls is XXXXXX」の数字をコピー
+3. この数字を `.env` ファイルの `ZOTERO_USER_ID` に設定
+
+## 📁 ディレクトリ構成
+
+```
+obsidian-automation/
+├── main.py                     # メイン実行ファイル
+├── config.py                   # 設定ファイル
+├── pdf_processor.py            # PDF処理
+├── zotero_integrator.py        # Zotero統合
+├── keyword_manager.py          # キーワード管理
+├── obsidian_note_creator.py    # ノート作成
+├── template.md                 # ノートテンプレート
+├── custom_prompt.md            # AI要約用カスタムプロンプト
+├── keywords.json               # キーワードデータベース
+├── .env                        # 環境変数ファイル（要作成）
+├── tests/                      # テストファイル
+├── pyproject.toml              # プロジェクト設定
+└── README.md                   # このファイル
+```
+
+## 🚦 使用方法
+
+### 基本的な使用方法
+
+```bash
+# メインスクリプトを実行
+uv run python main.py
+```
+
+このコマンドを実行すると：
+1. `PDF_FOLDER` 内のPDFファイルをスキャン
+2. 各PDFからテキストを抽出
+3. Google Gemini APIで要約を生成
+4. Zoteroからメタデータを取得
+5. キーワードを抽出・管理
+6. 構造化されたObsidianノートを `NOTE_FOLDER` に作成
+
+### 個別モジュールのテスト
+
+```bash
+# キーワード管理のテスト
+uv run python run_tests.py keyword
+
+# PDF処理のテスト
+uv run python run_tests.py pdf
+
+# Zotero統合のテスト
+uv run python run_tests.py zotero
+
+# ノート作成のテスト
+uv run python run_tests.py note
+
+# メイン処理のテスト
+uv run python run_tests.py main
+
+# 全てのテストを実行
+uv run python run_tests.py
+```
+
+## 🎨 カスタマイズ
+
+### ノートテンプレートの編集
+
+`template.md` ファイルを編集することで、生成されるノートの構造をカスタマイズできます。利用可能なプレースホルダー：
+
+- `{{title}}` - 論文タイトル
+- `{{authors}}` - 著者一覧
+- `{{date}}` - 発表日
+- `{{DOI}}` - DOI
+- `{{abstractNote}}` - アブストラクト
+- `{{publicationTitle}}` - 出版物名
+- その他多数のZoteroフィールド
+
+### AI要約プロンプトの編集
+
+`custom_prompt.md` ファイルを編集することで、AI要約の生成方法をカスタマイズできます。
+
+### キーワード管理
+
+キーワードは `keywords.json` で管理されます。新しいキーワードは自動的に追加されますが、手動で編集することも可能です。
+
+## 🧪 テスト
+
+```bash
+# 全てのテストを実行
+uv run python -m pytest tests/ -v
+
+# 特定のテストファイルのみ実行
+uv run python -m pytest tests/test_keyword_manager.py -v
+
+# カバレッジレポート付きでテスト実行
+uv run python -m pytest tests/ --cov=. --cov-report=html
+```
+
+## 🐛 トラブルシューティング
+
+### よくある問題
+
+1. **APIキーエラー**
+   - `.env` ファイルが正しく作成されているか確認
+   - APIキーが有効かブラウザで確認
+
+2. **PDFテキスト抽出エラー**
+   - PDFファイルが破損していないか確認
+   - PyPDF2で処理できない形式の可能性
+
+3. **Zotero接続エラー**
+   - インターネット接続を確認
+   - ZoteroのAPIキーとユーザーIDが正しいか確認
+
+4. **フォルダパスエラー**
+   - `PDF_FOLDER` と `NOTE_FOLDER` のパスが存在するか確認
+   - パスに特殊文字が含まれていないか確認
+
+### ログの確認
+
+プログラム実行時に出力されるログを確認することで、問題の原因を特定できます。
+
+## 🤝 開発に参加する
+
+1. このリポジトリをフォーク
+2. 機能ブランチを作成 (`git checkout -b feature/amazing-feature`)
+3. 変更をコミット (`git commit -m 'Add amazing feature'`)
+4. ブランチにプッシュ (`git push origin feature/amazing-feature`)
+5. プルリクエストを作成
+
+### 開発環境の設定
+
+```bash
+# 開発用依存関係を含めてインストール
+uv sync --group dev
+
+# プリコミットフックの設定（推奨）
+pre-commit install
+```
+
+## 📄 ライセンス
+
+このプロジェクトは MIT ライセンスの下で公開されています。詳細は `LICENSE` ファイルをご覧ください。
+
+## 🙏 謝辞
+
+- [Google Gemini API](https://ai.google.dev/) - AI要約生成
+- [Zotero](https://www.zotero.org/) - 文献管理
+- [PyPDF2](https://github.com/py-pdf/PyPDF2) - PDF処理
+- [uv](https://github.com/astral-sh/uv) - パッケージマネージャー
+
+## 📞 サポート
+
+問題が発生した場合は、[Issues](https://github.com/YOUR_USERNAME/obsidian-automation/issues) でお知らせください。

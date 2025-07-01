@@ -90,7 +90,17 @@
     "Self",
     "ContrastiveLearning",
     "DataAugmentation",
-    "NT"
+    "NT",
+    "Interpretability",
+    "ShapleyValues",
+    "ExplainableAI",
+    "LatentSequenceModeling",
+    "SoftTokens",
+    "DepthEstimation",
+    "SemanticSceneCompletion",
+    "Fusion",
+    "SatelliteImagery",
+    "BirdEyeView"
   ],
   "aliases": {
     "ComputerVision": "CV",

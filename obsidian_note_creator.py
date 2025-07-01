@@ -511,11 +511,27 @@ def create_obsidian_note(pdf_path, zotero_data, summary_text):
         # >[!Overview]の部分に要約を挿入
         if ">[!Overview]+" in content:
             if summary_text:
-                # [!Overview]を要約で置換
-                content = content.replace(">[!Overview]+", summary_text)
+                # 要約の各行の先頭に > を付ける
+                summary_lines = summary_text.split('\n')
+                formatted_summary_lines = []
+                for line in summary_lines:
+                    if line.strip():  # 空行でない場合
+                        if not line.startswith('>'):
+                            formatted_summary_lines.append(f"> {line}")
+                        else:
+                            formatted_summary_lines.append(line)
+                    else:  # 空行の場合
+                        formatted_summary_lines.append("> ")
+
+                formatted_summary = '\n'.join(formatted_summary_lines)
+
+                # [!Overview]+の下に要約を挿入
+                content = content.replace(
+                    ">[!Overview]+", f">[!Overview]+\n{formatted_summary}")
             else:
-                # 要約がない場合は[!Overview]を削除
-                content = content.replace(">[!Overview]+", "要約は生成されませんでした。")
+                # 要約がない場合は[!Overview]はそのまま残し、下にメッセージを追加
+                content = content.replace(
+                    ">[!Overview]+", ">[!Overview]+\n> 要約は生成されませんでした。")
 
         # Zoteroの{{}}記法を置換
         content = replace_zotero_placeholders(content, zotero_data)

@@ -44,7 +44,7 @@ class KeywordManager:
                     "aliases": {
                         # エイリアス（表記揺れ）を正規化するためのマッピング
                         "ComputerVision": "CV",
-                        "MachineLearning": "ML",
+                        "MachineLearningTheory": "ML",
                         "NaturalLanguageProcessing": "NLP",
                         "VisionTransformer": "ViT",
                         "MaskedAutoencoder": "MAE",
@@ -77,7 +77,7 @@ class KeywordManager:
             "aliases": {},
             "prohibited_keywords": [
                 # 機械学習分野で自明すぎるキーワード（デフォルト値）
-                "AI", "ArtificialIntelligence", "MachineLearning", "ML",
+                "AI", "ArtificialIntelligence", "MachineLearning",
                 "DeepLearning", "DL", "NeuralNetwork", "NeuralNetworks",
                 "Algorithm", "Algorithms", "Data", "DataScience",
                 "Learning", "Model", "Models", "Training", "Testing",

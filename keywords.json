@@ -104,7 +104,11 @@
     "BirdEyeView",
     "YOLO",
     "NewMethod",
-    "SpecialTechnique"
+    "SpecialTechnique",
+    "SyntheticData",
+    "ProbabilisticModel",
+    "ZeroCostNAS",
+    "EvolutionaryAlgorithm"
   ],
   "aliases": {
     "ComputerVision": "CV",

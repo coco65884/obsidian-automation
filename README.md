@@ -50,7 +50,20 @@ cd obsidian-automation
 uv sync
 ```
 
-### 3. 環境変数ファイル（.env）の作成
+### 3. 仮想環境作成とアクティベート
+
+```bash
+# 仮想環境の作成
+uv venv
+
+# 仮想環境をアクティベート
+source .venv/bin/activate
+
+# Windowsの場合
+# .venv\Scripts\activate
+```
+
+### 4. 環境変数ファイル（.env）の作成
 
 プロジェクトルートに `.env` ファイルを作成し、以下の環境変数を設定してください：
 
@@ -116,8 +129,11 @@ obsidian-automation/
 ### 基本的な使用方法
 
 ```bash
+# 仮想環境をアクティベート（まだの場合）
+source .venv/bin/activate
+
 # メインスクリプトを実行
-uv run python main.py
+python main.py
 ```
 
 このコマンドを実行すると：
@@ -127,28 +143,6 @@ uv run python main.py
 4. Zoteroからメタデータを取得
 5. キーワードを抽出・管理
 6. 構造化されたObsidianノートを `NOTE_FOLDER` に作成
-
-### 個別モジュールのテスト
-
-```bash
-# キーワード管理のテスト
-uv run python run_tests.py keyword
-
-# PDF処理のテスト
-uv run python run_tests.py pdf
-
-# Zotero統合のテスト
-uv run python run_tests.py zotero
-
-# ノート作成のテスト
-uv run python run_tests.py note
-
-# メイン処理のテスト
-uv run python run_tests.py main
-
-# 全てのテストを実行
-uv run python run_tests.py
-```
 
 ## 🎨 カスタマイズ
 
@@ -174,16 +168,32 @@ uv run python run_tests.py
 
 ## 🧪 テスト
 
+### テストの実行
+
 ```bash
+# 仮想環境をアクティベート（まだの場合）
+source .venv/bin/activate
+
 # 全てのテストを実行
-uv run python -m pytest tests/ -v
+pytest tests
+
+# 詳細な出力でテスト実行
+pytest tests -v
 
 # 特定のテストファイルのみ実行
-uv run python -m pytest tests/test_keyword_manager.py -v
+pytest tests/test_keyword_manager.py -v
 
 # カバレッジレポート付きでテスト実行
-uv run python -m pytest tests/ --cov=. --cov-report=html
+pytest tests --cov=. --cov-report=html
 ```
+
+### テストファイル一覧
+
+- `tests/test_keyword_manager.py` - キーワード管理機能のテスト
+- `tests/test_pdf_processor.py` - PDF処理機能のテスト
+- `tests/test_zotero_integrator.py` - Zotero統合機能のテスト
+- `tests/test_obsidian_note_creator.py` - ノート作成機能のテスト
+- `tests/test_main.py` - メイン処理のテスト
 
 ## 🐛 トラブルシューティング
 
@@ -223,20 +233,9 @@ uv run python -m pytest tests/ --cov=. --cov-report=html
 # 開発用依存関係を含めてインストール
 uv sync --group dev
 
-# プリコミットフックの設定（推奨）
-pre-commit install
+# 仮想環境をアクティベート
+source .venv/bin/activate
 ```
-
-## 📄 ライセンス
-
-このプロジェクトは MIT ライセンスの下で公開されています。詳細は `LICENSE` ファイルをご覧ください。
-
-## 🙏 謝辞
-
-- [Google Gemini API](https://ai.google.dev/) - AI要約生成
-- [Zotero](https://www.zotero.org/) - 文献管理
-- [PyPDF2](https://github.com/py-pdf/PyPDF2) - PDF処理
-- [uv](https://github.com/astral-sh/uv) - パッケージマネージャー
 
 ## 📞 サポート
 

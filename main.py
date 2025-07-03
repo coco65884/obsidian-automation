@@ -4,6 +4,7 @@ from config import ZOTERO_USER_ID, PDF_FOLDER, NOTE_FOLDER
 from pdf_processor import extract_text_from_pdf, summarize_text
 from zotero_integrator import get_zotero_item_info
 from obsidian_note_creator import create_obsidian_note
+from keywords_reconstructor import KeywordsReconstructor
 
 
 def get_existing_notes():
@@ -102,6 +103,21 @@ def main():
             processed_count += 1
 
     print(f"処理完了: {processed_count}個の新しいノートを作成しました。")
+
+    # キーワード再構成を実行
+    print("\n" + "="*50)
+    print("キーワード再構成を開始します...")
+
+    try:
+        reconstructor = KeywordsReconstructor()
+        success = reconstructor.reconstruct_keywords()
+
+        if success:
+            print("✅ キーワード再構成が正常に完了しました")
+        else:
+            print("❌ キーワード再構成に失敗しました")
+    except Exception as e:
+        print(f"❌ キーワード再構成中にエラーが発生しました: {e}")
 
 
 if __name__ == "__main__":

@@ -20,7 +20,8 @@ class TestKeywordManager:
             "categories": {
                 "field": ["CV", "NLP", "RL"],
                 "task": ["Classification", "Detection", "Segmentation"],
-                "method": ["CNN", "Transformer", "ViT"]
+                "method": ["SelfSupervisedLearning", "EnsembleLearning"],
+                "architecture": ["CNN", "Transformer", "ViT"]
             },
             "custom_keywords": ["TestKeyword1", "TestKeyword2"],
             "aliases": {
@@ -177,6 +178,7 @@ class TestKeywordManager:
         assert "分野:" in prompt
         assert "タスク:" in prompt
         assert "手法:" in prompt
+        assert "アーキテクチャ:" in prompt
 
     def test_process_generated_keywords(self, keyword_manager):
         """生成されたキーワード処理のテスト"""

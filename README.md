@@ -26,9 +26,9 @@
 2. Obsidianを起動しVault(ワークスペース)を作成
 3. Vault内に論文を格納するディレクトリとノートを格納するディレクトリを作成
 4. Preference/Community pluginsから便利なプラグインを導入(推奨)
-   * Callout Manager: 自分オリジナルのコールアウトを作成できます。このプログラムを使う場合、Overviewを登録しておくと見やすくなります
-   * Dataveiw: Noteの情報を元にtableが作成できます。Samples/Dashboard.mdに例があります
-   * PDF++: 論文のスクショを撮ってリンクを貼り付けたり、引用して自分なりのメモを残したりできます
+   * Callout Manager: 自分オリジナルのコールアウトを作成できます。このプログラムを使う場合、Overviewを登録しておくと見やすくなります。
+   * Dataveiw: Noteの情報を元にtableが作成できます。Samples/Dashboard.mdに例があります。(設定でEnable Javascripts queriesをオンにしてください。)
+   * PDF++: 論文のスクショを撮ってリンクを貼り付けたり、引用して自分なりのメモを残したりできます。
 5. Samples/Dashboard.mdを自分のVaultに追加し、二箇所ある`YOUR_NOTE_FOLDER_HERE`の部分をノートを格納するディレクトリへのパスに置換(推奨)
 6. .obsidian/snippetsにSamples/paper.cssを追加し、Preference/Appearance/CSS snippetsからcssを適用(任意)
 

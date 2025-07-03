@@ -43,7 +43,7 @@ pipx install uv
 
 ```bash
 # リポジトリをクローン
-git clone https://github.com/YOUR_USERNAME/obsidian-automation.git
+git clone https://github.com/coco65884/obsidian-automation
 cd obsidian-automation
 
 # 依存関係をインストール

@@ -6,11 +6,10 @@ publication: "{{publicationTitle}}"
 year: "{{date | format('YYYY')}}"
 citekey: "{{citekey}}"
 dateread: '{{importDate | format("YYYY-MM-DD")}}'
-read: false
-rating: 0
 doi: "{{DOI}}"
 url: "{{url}}"
 type: "{{itemType}}"
+rating: 0
 ---
 
 > [!Data]+
@@ -33,6 +32,9 @@ type: "{{itemType}}"
 
 
 # Experiments
+
+
+# Comments
 
 
 # Citation

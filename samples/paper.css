@@ -1,0 +1,57 @@
+/* Introductionの見出しを青色にする */
+.markdown-preview-view h1[data-heading*="Introduction"]{
+  color: #d9534f; /* 赤 */
+  background-color: rgba(200, 200, 200, 0.2); /* 薄いグレーの背景 */
+  padding: 5px 10px;
+  border-radius: 5px;
+}
+
+/* Related Workの見出しを緑色にする */
+.markdown-preview-view h1[data-heading*="Related Work"]{
+  color: #f0ad4e; /* オレンジ */
+  background-color: rgba(200, 200, 200, 0.2); /* 薄いグレーの背景 */
+  padding: 5px 10px;
+  border-radius: 5px;
+}
+
+/* Methodの見出しをオレンジ色にする */
+.markdown-preview-view h1[data-heading*="Method"]{
+  color: #5cb85c; /* 緑 */
+  background-color: rgba(200, 200, 200, 0.2); /* 薄いグレーの背景 */
+  padding: 5px 10px;
+  border-radius: 5px;
+}
+
+/* Discussionの見出しを紫色にする */
+.markdown-preview-view h1[data-heading*="Experiment"]{
+  color: #337ab7; /* 濃い青 */
+  background-color: rgba(200, 200, 200, 0.2); /* 薄いグレーの背景 */
+  padding: 5px 10px;
+  border-radius: 5px;
+}
+
+.markdown-preview-view h1[data-heading*="Comments"]{
+  color: #8a6dbe; /* 紫 */
+  background-color: rgba(200, 200, 200, 0.2); /* 薄いグレーの背景 */
+  padding: 5px 10px;
+  border-radius: 5px;
+}
+
+.markdown-preview-view h2{
+  color: #e973c8; /* ピンク */
+}
+
+/* callout内のh3はデフォルト色を維持 */
+.markdown-preview-view .callout h3 {
+   color: var(--text-normal) !important; /* デフォルト色を使用 */
+}
+
+.markdown-preview-view h4{
+  color: #ccdf3e; /* 黄緑 */
+}
+
+/* その他の見出しの例 */
+/* 例えば、特定のキーワードを含む見出しを対象にする場合 (部分一致) */
+.markdown-preview-view h1[data-heading*="Conclusion"]{
+  color: #d9534f; /* 赤 */
+}

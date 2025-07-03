@@ -22,21 +22,21 @@
 ## 💡 準備
 
 ### Obsidianの準備
-1. Obsidianをインストール。
-2. Obsidianを起動しVault(ワークスペース)を作成。
-3. Vault内に論文を格納するディレクトリとノートを格納するディレクトリを作成。
-4. Preference/Community pluginsから便利なプラグインを導入。(推奨)
-   * Callout Manager: 自分オリジナルのコールアウトを作成できます。このプログラムを使う場合、Overviewを登録しておくと見やすくなります。
-   * Dataveiw: Noteの情報を元にtableが作成できます。Samples/Dashboard.mdに例があります。
-   * PDF++: 論文のスクショを撮ってリンクを貼り付けたり、引用して自分なりのメモを残したりできます。
-5. Samples/Dashboard.mdを自分のVaultに追加。(推奨)
-6. .obsidian/snippetsにSamples/paper.cssを追加し、Preference/Appearance/CSS snippetsからcssを適用。(任意)
+1. Obsidianをインストール
+2. Obsidianを起動しVault(ワークスペース)を作成
+3. Vault内に論文を格納するディレクトリとノートを格納するディレクトリを作成
+4. Preference/Community pluginsから便利なプラグインを導入(推奨)
+   * Callout Manager: 自分オリジナルのコールアウトを作成できます。このプログラムを使う場合、Overviewを登録しておくと見やすくなります
+   * Dataveiw: Noteの情報を元にtableが作成できます。Samples/Dashboard.mdに例があります
+   * PDF++: 論文のスクショを撮ってリンクを貼り付けたり、引用して自分なりのメモを残したりできます
+5. Samples/Dashboard.mdを自分のVaultに追加し、二箇所ある`YOUR_NOTE_FOLDER_HERE`の部分をノートを格納するディレクトリへのパスに置換(推奨)
+6. .obsidian/snippetsにSamples/paper.cssを追加し、Preference/Appearance/CSS snippetsからcssを適用(任意)
 
 ### Zoteroの準備
-1. Zoteroをインストール。
-2. ZoteroからPDFを転送するプラグイン`ZotMoov`を追加。
-3. ZotMoovの出力先をObsidianの準備の3で追加した論文を格納するディレクトリに指定。
-4. Preferences/General/File Renaming/Customize Filename Formatで{{ title truncate="100" }}を指定。
+1. Zoteroをインストール
+2. ZoteroからPDFを転送するプラグイン`ZotMoov`を追加
+3. ZotMoovの出力先をObsidianの準備の3で追加した論文を格納するディレクトリに指定
+4. Preferences/General/File Renaming/Customize Filename Formatで{{ title truncate="100" }}を指定
 
 ## 🛠 環境設定
 
@@ -184,6 +184,7 @@ python main.py
 ### キーワード管理
 
 キーワードは `keywords.json` で管理されます。新しいキーワードは自動的に追加されますが、手動で編集することも可能です。
+また、`keywords_reconstraction.md`ではキーワード再構成時の指示を変更することが可能です。
 
 ## 🧪 テスト
 
@@ -241,9 +242,9 @@ pytest tests --cov=. --cov-report=html
 ## 🤝 開発に参加する
 
 1. このリポジトリをフォーク
-2. 機能ブランチを作成 (`git checkout -b feature/amazing-feature`)
+2. 機能ブランチを作成 (`git checkout -b your_git_ID/issue#number`)
 3. 変更をコミット (`git commit -m 'Add amazing feature'`)
-4. ブランチにプッシュ (`git push origin feature/amazing-feature`)
+4. ブランチにプッシュ (`git push origin your_git_ID/issue#number`)
 5. プルリクエストを作成
 
 ### 開発環境の設定
@@ -258,4 +259,4 @@ source .venv/bin/activate
 
 ## 📞 サポート
 
-問題が発生した場合は、[Issues](https://github.com/YOUR_USERNAME/obsidian-automation/issues) でお知らせください。
+問題が発生した場合は、[Issues](https://github.com/coco65884/obsidian-automation/issues) でお知らせください。

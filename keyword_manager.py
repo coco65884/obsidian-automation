@@ -34,11 +34,15 @@ class KeywordManager:
                                  "TextGeneration", "LanguageModeling",
                                  "QuestionAnswering", "ImageClassification",
                                  "InstanceSegmentation", "PoseEstimation"],
-                        "method": ["CNN", "RNN", "LSTM", "Transformer",
-                                   "BERT", "GPT", "ViT", "VisionTransformer",
-                                   "DiffusionModel", "GAN", "VAE",
-                                   "Autoencoder", "ResNet", "UNet", "CLIP",
-                                   "YOLO", "RCNNs", "AttentionMechanism"]
+                        "method": ["SelfSupervisedLearning", "ImagePreTraining",
+                                   "EnsembleLearning", "KnowledgeDistillation",
+                                   "HyperparameterOptimization", "CLIP",
+                                   "YOLO", "RCNNs", "AttentionMechanism"],
+                        "architecture": ["CNN", "RNN", "LSTM", "Transformer",
+                                         "BERT", "GPT", "ViT",
+                                         "VisionTransformer",
+                                         "DiffusionModel", "GAN", "VAE",
+                                         "Autoencoder", "ResNet", "UNet"]
                     },
                     "custom_keywords": [],
                     "aliases": {
@@ -80,11 +84,15 @@ class KeywordManager:
                          "TextGeneration", "LanguageModeling",
                          "QuestionAnswering", "ImageClassification",
                          "InstanceSegmentation", "PoseEstimation"],
-                "method": ["CNN", "RNN", "LSTM", "Transformer",
-                           "BERT", "GPT", "ViT", "VisionTransformer",
-                           "DiffusionModel", "GAN", "VAE",
-                           "Autoencoder", "ResNet", "UNet", "CLIP",
-                           "YOLO", "RCNNs", "AttentionMechanism"]
+                "method": ["SelfSupervisedLearning", "ImagePreTraining",
+                           "EnsembleLearning", "KnowledgeDistillation",
+                           "HyperparameterOptimization", "CLIP",
+                           "YOLO", "RCNNs", "AttentionMechanism"],
+                "architecture": ["CNN", "RNN", "LSTM", "Transformer",
+                                 "BERT", "GPT", "ViT",
+                                 "VisionTransformer",
+                                 "DiffusionModel", "GAN", "VAE",
+                                 "Autoencoder", "ResNet", "UNet"]
             },
             "custom_keywords": [],
             "aliases": {},
@@ -270,7 +278,8 @@ class KeywordManager:
             "field": ("分野の大きな括り(ComputerVisionならCV, 理論よりの論文なら"
                       "ML, 自然言語処理ならNLPなど)"),
             "task": "タスクのジャンル(SemanticSegmentationやSuperResolutionなど)",
-            "method": "手法の大きな括り(ViTやDiffusionModelなど)"
+            "method": "手法の大きな括り(SelfSupervisedLearningやKnowledgeDistillationなど)",
+            "architecture": "アーキテクチャ(CNNやTransformerやViTなど)"
         }
 
     def create_keyword_prompt(self) -> str:
@@ -279,11 +288,14 @@ class KeywordManager:
         field_list = ', '.join(self.keywords_data["categories"]["field"])
         task_list = ', '.join(self.keywords_data["categories"]["task"])
         method_list = ', '.join(self.keywords_data["categories"]["method"])
+        architecture_list = ', '.join(
+            self.keywords_data["categories"]["architecture"])
 
         prompt = f"""
 > - 分野: {field_list}
 > - タスク: {task_list}
-> - 手法: {method_list}"""
+> - 手法: {method_list}
+> - アーキテクチャ: {architecture_list}"""
 
         return prompt
 

@@ -20,7 +20,8 @@ class TestKeywordsReconstructor:
             "categories": {
                 "field": ["CV", "NLP", "RL"],
                 "task": ["Classification", "Detection", "Segmentation"],
-                "method": ["CNN", "Transformer", "ViT"]
+                "method": ["SelfSupervisedLearning", "EnsembleLearning"],
+                "architecture": ["CNN", "Transformer", "ViT"]
             },
             "custom_keywords": ["TestKeyword1", "TestKeyword2"],
             "aliases": {
@@ -434,7 +435,8 @@ Thank you!"""
           "categories": {
             "field": ["CV", "NLP"],
             "task": ["Classification"],
-            "method": ["CNN"]
+            "method": ["SelfSupervisedLearning"],
+            "architecture": ["CNN"]
           },
           "custom_keywords": [],
           "aliases": {"ComputerVision": "CV"},

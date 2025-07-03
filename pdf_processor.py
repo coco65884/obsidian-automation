@@ -144,8 +144,8 @@ def summarize_text(text, model_name="gemini-2.5-flash"):
         # モデル名を確認し、必要に応じて調整
         if model_name not in available_models:
             # gemini-2.5-flashが見つからない場合、代替モデルを試す
-            fallback_models = ["gemini-1.5-flash",
-                               "gemini-1.5-pro", "gemini-pro"]
+            fallback_models = ["gemini-1.5-flash"]
+            # fallback_models = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"]
             for fallback_model in fallback_models:
                 if fallback_model in available_models:
                     print(f"モデル '{model_name}' が見つからないため、"

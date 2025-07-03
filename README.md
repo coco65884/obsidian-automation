@@ -1,6 +1,6 @@
 # Obsidian Automation
 
-研究論文のPDFファイルを自動的に処理して、Obsidianノートを生成するPythonツールです。Zoteroからメタデータを取得、Google Gemini APIを使用した要約生成、キーワード管理機能を提供します。
+研究論文のPDFファイルを自動的に処理して、Obsidianノートを生成するPythonツールです。Zoteroからメタデータを取得、Google Gemini APIを使用した要約生成、キーワード管理機能を提供します。APIにはgemini-2.5-flashを利用するので基本無料(なはず)です。
 
 ## 🚀 主な機能
 
@@ -18,6 +18,25 @@
 - Google Gemini API アクセス
 - Zotero アカウント
 - Obsidian (ノート管理用)
+
+## 💡 準備
+
+### Obsidianの準備
+1. Obsidianをインストール。
+2. Obsidianを起動しVault(ワークスペース)を作成。
+3. Vault内に論文を格納するディレクトリとノートを格納するディレクトリを作成。
+4. Preference/Community pluginsから便利なプラグインを導入。(推奨)
+   * Callout Manager: 自分オリジナルのコールアウトを作成できます。このプログラムを使う場合、Overviewを登録しておくと見やすくなります。
+   * Dataveiw: Noteの情報を元にtableが作成できます。Samples/Dashboard.mdに例があります。
+   * PDF++: 論文のスクショを撮ってリンクを貼り付けたり、引用して自分なりのメモを残したりできます。
+5. Samples/Dashboard.mdを自分のVaultに追加。(推奨)
+6. .obsidian/snippetsにSamples/paper.cssを追加し、Preference/Appearance/CSS snippetsからcssを適用。(任意)
+
+### Zoteroの準備
+1. Zoteroをインストール。
+2. ZoteroからPDFを転送するプラグイン`ZotMoov`を追加。
+3. ZotMoovの出力先をObsidianの準備の3で追加した論文を格納するディレクトリに指定。
+4. Preferences/General/File Renaming/Customize Filename Formatで{{ title truncate="100" }}を指定。
 
 ## 🛠 環境設定
 
@@ -65,7 +84,7 @@ source .venv/bin/activate
 
 ### 4. 環境変数ファイル（.env）の作成
 
-プロジェクトルートに `.env` ファイルを作成し、以下の環境変数を設定してください：
+プロジェクトルートに `.env` ファイルを作成し、以下の環境変数を設定してください。：
 
 ```bash
 # .env ファイルの例

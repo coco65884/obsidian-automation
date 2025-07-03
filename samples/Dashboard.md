@@ -50,10 +50,9 @@ dv.table(
         }
         
         return [
-            p.title,
+            `[[${p.title}]]`,
             "⭐️".repeat(p.rating) + "☆".repeat(5 - p.rating),
             commentsSection
         ];
     }))
 );
-```

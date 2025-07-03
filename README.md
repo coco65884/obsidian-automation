@@ -1,7 +1,9 @@
 # Obsidian Automation
 
 研究論文のPDFファイルを自動的に処理して、Obsidianノートを生成するPythonツールです。Zoteroからメタデータを取得、Google Gemini APIを使用した要約生成、キーワード管理機能を提供します。APIにはgemini-2.5-flashを利用するので基本無料(なはず)です。
-![A956BD2A-D6F6-425A-B3CA-19B12B4DFF4D_1_102_a](https://github.com/user-attachments/assets/5104e292-b01e-45eb-b580-bcaf99e45ba7)
+https://github.com/user-attachments/assets/dbf2470b-c447-4c6b-af6d-b8a1a3f40f64
+
+
 
 ## 🚀 主な機能
 

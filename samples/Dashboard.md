@@ -1,7 +1,7 @@
 読んでない論文リスト
 ```dataview 
 LIST
-FROM "03_LiteratureNotes"
+FROM "YOUR_NOTE_FOLDER_HERE"
 WHERE rating=0
 SORT file.name ASC
 
@@ -9,7 +9,7 @@ SORT file.name ASC
 
 評価済み論文一覧
 ```dataviewjs
-const pages = dv.pages('"03_LiteratureNotes"').where(p => p.rating);
+const pages = dv.pages('"YOUR_NOTE_FOLDER_HERE"').where(p => p.rating);
 
 dv.table(
     ["タイトル", "星評価", "コメント"],

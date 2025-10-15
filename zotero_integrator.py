@@ -26,22 +26,89 @@ def get_zotero_item_info(file_name_without_ext):
     items = z.items(q=search_title)
     print(f"Zotero検索ヒット件数: {len(items)}")
 
-    # 完全一致・部分一致で最初にヒットしたものを探す
+    # 検索結果のタイトルを表示（デバッグ用）
+    if items:
+        print("検索結果のタイトル一覧:")
+        for i, item in enumerate(items[:5]):  # 最初の5件のみ表示
+            try:
+                # pyzoteroライブラリの型定義問題回避
+                # type: ignore
+                item_data = item['data'] if 'data' in item else {}
+                item_title = item_data.get('title', 'タイトルなし')
+                item_type = item_data.get('itemType', '不明')
+                print(f"  {i+1}. [{item_type}] {item_title}")
+                print(f"      正規化: '{normalize_filename(item_title)}'")
+            except Exception as e:
+                print(f"  {i+1}. エラー: {e}")
+
+    # より柔軟なマッチング戦略
+    matched_item = None
+
+    # 1. 完全一致を探す
     for item in items:
-        item_title = item['data'].get('title', '')
-        if (normalize_filename(item_title) == normalized_search_title or
-                normalized_search_title in normalize_filename(item_title)):
-            print(f"ヒット: {item_title}")
+        try:
+            item_data = item.get('data', {})
+            item_title = item_data.get('title', '')
+            if normalize_filename(item_title) == normalized_search_title:
+                print(f"完全一致でヒット: {item_title}")
+                matched_item = item
+                break
+        except Exception as e:
+            print(f"完全一致検索でエラー: {e}")
+            continue
+
+    # 2. 部分一致を探す（完全一致が見つからない場合）
+    if not matched_item:
+        for item in items:
+            try:
+                item_data = item.get('data', {})
+                item_title = item_data.get('title', '')
+                normalized_item_title = normalize_filename(item_title)
+
+                # より柔軟な部分一致（両方向）
+                if (normalized_search_title in normalized_item_title or
+                        normalized_item_title in normalized_search_title):
+                    print(f"部分一致でヒット: {item_title}")
+                    matched_item = item
+                    break
+
+                # キーワードベースの一致も試す
+                search_words = normalized_search_title.split()
+                item_words = normalized_item_title.split()
+                common_words = set(search_words) & set(item_words)
+                # 共通単語が十分ある場合
+                min_words = min(3, len(search_words) // 2)
+                if len(common_words) >= min_words:
+                    common_str = ', '.join(common_words)
+                    print(f"キーワード一致でヒット: {item_title} "
+                          f"(共通単語: {common_str})")
+                    matched_item = item
+                    break
+
+            except Exception as e:
+                print(f"部分一致検索でエラー: {e}")
+                continue
+
+    # マッチしたアイテムを処理
+    if matched_item:
+        try:
+            item_data = matched_item.get('data', {})
+
             # 添付ファイルなら親アイテムを取得
-            if (item['data'].get('itemType') == 'attachment' and
-                    'parentItem' in item['data']):
-                parent_id = item['data']['parentItem']
+            if (item_data.get('itemType') == 'attachment' and
+                    'parentItem' in item_data):
+                parent_id = item_data['parentItem']
                 parent_item = z.item(parent_id)
                 if parent_item and 'data' in parent_item:
                     print('親アイテム（論文本体）を取得しました')
                     return parent_item['data']
+
             # それ以外はそのまま返す
-            return item['data']
+            return item_data
+
+        except Exception as e:
+            print(f"アイテム処理でエラー: {e}")
+            return None
 
     print("Zoteroでタイトル一致するアイテムが見つかりませんでした。")
     return None

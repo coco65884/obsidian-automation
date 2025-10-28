@@ -6,6 +6,7 @@
 １. custom_keywordsに含まれるタグで、それだけでは意味がわからないものがあれば削除する。削除したものは"deleted"というフィールドを作りそこに追記する。
 2. custom_keywordsに含まれるkeywordsのうち、field、task、method、architectureに該当するものがあれば、移動する。
 3. aliasesに追記すべきキーワードと略称があれば追記する。
+4. mdファイルに実際に記述するものは、aliasesの略称の方(例: {"ComputerVision": "CV"}であれば"CV"の方)に統一してください。
 
 精査するJSONファイルは以下のとおりです。
 {JSON_SECTION}

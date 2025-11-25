@@ -48,6 +48,8 @@ uvがインストールされていない場合は、以下のコマンドでイ
 ```bash
 # macOS/Linux
 curl -LsSf https://astral.sh/uv/install.sh | sh
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrcß
 
 # Windows (PowerShell)
 irm https://astral.sh/uv/install.ps1 | iex

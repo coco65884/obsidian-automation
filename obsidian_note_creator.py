@@ -83,13 +83,21 @@ def clean_filename(filename):
     return filename.strip()
 
 
-def replace_zotero_placeholders(content, zotero_data):
+def replace_zotero_placeholders(content, zotero_data, llm_publication_info=None):
     """Zoteroの{{}}記法をAPIデータで置換"""
     if not zotero_data:
         return content
 
     print("Zoteroデータで置換を開始...")
     print(f"利用可能なZoteroフィールド: {list(zotero_data.keys())}")
+    
+    # LLMから取得したpublication情報があれば、zotero_dataに追加
+    if llm_publication_info:
+        print(f"LLMから取得したpublication情報: {llm_publication_info}")
+        # LLMのpublication情報をpublicationTitleとして使用
+        if 'publicationTitle' not in zotero_data or not zotero_data.get('publicationTitle'):
+            zotero_data['publicationTitle'] = llm_publication_info
+            print(f"LLMのpublication情報をpublicationTitleとして設定: {llm_publication_info}")
 
     # Liquid記法のフォーマット機能を処理
     # {{importDate | format("YYYY-MM-DD")}} のような形式
@@ -466,7 +474,7 @@ def make_info_block(zotero_data):
     return '\n'.join(lines)
 
 
-def create_obsidian_note(pdf_path, zotero_data, summary_text):
+def create_obsidian_note(pdf_path, zotero_data, summary_data):
     # PDFファイル名からノート名を決定 (拡張子なし)
     pdf_filename_with_ext = os.path.basename(pdf_path)
     note_title = os.path.splitext(pdf_filename_with_ext)[0]
@@ -499,6 +507,16 @@ def create_obsidian_note(pdf_path, zotero_data, summary_text):
 
         # 要約の追加
         content += "## 要約\n"
+        # summary_dataが辞書の場合は'summary'キーから取得、そうでなければそのまま使用
+        if isinstance(summary_data, dict):
+            summary_text = summary_data.get('summary', '')
+            abstract_text = summary_data.get('abstract', '')
+            llm_publication_info = summary_data.get('publication', '')
+        else:
+            summary_text = summary_data
+            abstract_text = ''
+            llm_publication_info = ''
+        
         content += summary_text if summary_text else "要約は生成されませんでした。\n"
         content += "\n"
     else:
@@ -507,6 +525,21 @@ def create_obsidian_note(pdf_path, zotero_data, summary_text):
 
         # タイトルを置換
         content = content.replace("{title}", note_title)
+
+        # summary_dataを適切に処理
+        if isinstance(summary_data, dict):
+            summary_text = summary_data.get('summary', '')
+            abstract_text = summary_data.get('abstract', '')
+            llm_publication_info = summary_data.get('publication', '')
+        else:
+            summary_text = summary_data
+            abstract_text = ''
+            llm_publication_info = ''
+        
+        # LLMから取得したabstractがあれば、zotero_dataに追加
+        if abstract_text and zotero_data:
+            print(f"LLMから取得したabstract情報を使用します（長さ: {len(abstract_text)}）")
+            zotero_data['abstractNote'] = abstract_text
 
         # >[!Overview]の部分に要約を挿入（+の有無に関わらず対応）
         overview_pattern = r'>\s*\[!Overview\]\s*[+\-]?(?=\s|$)'
@@ -537,8 +570,8 @@ def create_obsidian_note(pdf_path, zotero_data, summary_text):
                 content = content.replace(
                     overview_tag, f"{overview_tag}\n> 要約は生成されませんでした。")
 
-        # Zoteroの{{}}記法を置換
-        content = replace_zotero_placeholders(content, zotero_data)
+        # Zoteroの{{}}記法を置換（LLMのpublication情報も渡す）
+        content = replace_zotero_placeholders(content, zotero_data, llm_publication_info)
 
         # 古いプレースホルダーもサポート（後方互換性のため）
         if zotero_data:

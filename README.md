@@ -138,7 +138,9 @@ obsidian-automation/
 ├── keyword_manager.py          # キーワード管理
 ├── obsidian_note_creator.py    # ノート作成
 ├── template.md                 # ノートテンプレート
-├── custom_prompt.md            # AI要約用カスタムプロンプト
+├── prompt/                     # プロンプトファイル
+│   ├── custom_prompt.md        # AI要約用カスタムプロンプト
+│   └── keywords_reconstruction.md # キーワード再構成用プロンプト
 ├── keywords.json               # キーワードデータベース
 ├── .env                        # 環境変数ファイル（要作成）
 ├── tests/                      # テストファイル
@@ -182,12 +184,12 @@ python main.py
 
 ### AI要約プロンプトの編集
 
-`custom_prompt.md` ファイルを編集することで、AI要約の生成方法をカスタマイズできます。
+`prompt/custom_prompt.md` ファイルを編集することで、AI要約の生成方法をカスタマイズできます。
 
 ### キーワード管理
 
 キーワードは `keywords.json` で管理されます。新しいキーワードは自動的に追加されますが、手動で編集することも可能です。
-また、`keywords_reconstraction.md`ではキーワード再構成時の指示を変更することが可能です。
+また、`prompt/keywords_reconstruction.md`ではキーワード再構成時の指示を変更することが可能です。
 
 ## 🧪 テスト
 

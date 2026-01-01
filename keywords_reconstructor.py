@@ -8,7 +8,7 @@ from config import NOTE_FOLDER, GEMINI_API_KEY
 
 class KeywordsReconstructor:
     def __init__(self, keywords_file="keywords.json",
-                 reconstruction_prompt_file="keywords_reconstruction.md"):
+                 reconstruction_prompt_file="prompt/keywords_reconstruction.md"):
         """
         キーワード再構成クラス
 

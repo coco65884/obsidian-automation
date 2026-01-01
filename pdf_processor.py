@@ -57,7 +57,7 @@ def load_custom_prompt():
     """custom_prompt.mdからテンプレートを読み込む"""
     try:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        prompt_path = os.path.join(script_dir, "custom_prompt.md")
+        prompt_path = os.path.join(script_dir, "prompt", "custom_prompt.md")
         with open(prompt_path, 'r', encoding='utf-8') as f:
             content = f.read()
 

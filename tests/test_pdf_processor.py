@@ -185,7 +185,12 @@ Some other content
         result = summarize_text("Sample text to summarize")
 
         # アサーション
-        assert result == "Processed summary"
+        expected = {
+            'summary': "Processed summary",
+            'abstract': "",
+            'publication': ""
+        }
+        assert result == expected
         mock_gen_model.assert_called_once_with("gemini-2.5-flash")
         mock_model_instance.generate_content.assert_called_once()
 

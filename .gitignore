@@ -15,3 +15,6 @@ wheels/
 
 # keywords file
 keywords.json
+
+# Shell scripts with personal info
+run.sh

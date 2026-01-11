@@ -1,7 +1,7 @@
 import PyPDF2
 import google.generativeai as genai
 import os
-from keyword_manager import KeywordManager
+from .keyword_manager import KeywordManager
 
 
 def extract_text_from_pdf(pdf_path):
@@ -57,7 +57,8 @@ def load_custom_prompt():
     """custom_prompt.mdからテンプレートを読み込む"""
     try:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        prompt_path = os.path.join(script_dir, "custom_prompt.md")
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(script_dir)))
+        prompt_path = os.path.join(project_root, "prompt", "custom_prompt.md")
         with open(prompt_path, 'r', encoding='utf-8') as f:
             content = f.read()
 
@@ -128,6 +129,28 @@ def process_keywords_in_summary(summary_text):
         return summary_text
 
 
+def normalize_llm_text(markdown_text: str) -> str:
+    """LLM出力内のLaTeX系やリテラル改行表記をMarkdownの改行に正規化する"""
+    if not markdown_text:
+        return markdown_text
+    try:
+        import re
+        text = markdown_text
+        # '\n'（バックスラッシュ+nのリテラル）を実際の改行へ
+        text = text.replace('\\n', '\n')
+
+        # プロンプト指示によりエスケープされたバックスラッシュを元に戻す (\\ -> \)
+        text = text.replace('\\\\', '\\')
+
+        # LaTeXの \newline を段落改行へ
+        text = re.sub(r'\\newline\b', '\n\n', text)
+        # 余分な空白の正規化（連続空行は2行に圧縮）
+        text = re.sub(r'\n{3,}', '\n\n', text)
+        return text
+    except Exception:
+        return markdown_text
+
+
 def summarize_text(text, model_name="gemini-2.5-flash"):
     try:
         # テキストを事前にクリーニング
@@ -173,13 +196,105 @@ def summarize_text(text, model_name="gemini-2.5-flash"):
         prompt = clean_text(prompt)
 
         response = model.generate_content(prompt)
-        summary_text = response.text
+        response_text = response.text
 
-        # キーワードを処理
-        if summary_text:
-            summary_text = process_keywords_in_summary(summary_text)
+        # JSON形式のレスポンスを解析
+        try:
+            import json
+            import re
+            
+            # デバッグ: レスポンステキストの最初の500文字を表示
+            print(f"レスポンステキスト（最初の500文字）: {response_text[:500]}")
+            
+            # JSONブロックを抽出（```json と ``` で囲まれた部分）
+            json_pattern = r'```json\s*\n(.*?)\n```'
+            json_match = re.search(json_pattern, response_text, re.DOTALL)
+            
+            if json_match:
+                json_text = json_match.group(1)
+                print(f"JSONブロックを抽出: {json_text[:200]}...")
+            else:
+                # JSONブロックが見つからない場合は、全体をJSONとして解析を試行
+                json_text = response_text.strip()
+                print("JSONブロックが見つからないため、全体をJSONとして解析を試行")
+            
+            # JSONを解析してフィールドを取得
+            json_data = json.loads(json_text)
+            summary_text = json_data.get('overview', '')
+            abstract_text = json_data.get('abstract', '')
+            
+            # publication情報も保存（後で使用するため）
+            publication_info = json_data.get('publication', '')
+            
+            print(f"JSON解析成功 - overview長さ: {len(summary_text)}, abstract長さ: {len(abstract_text)}, publication: {publication_info}")
+            
+            # テキスト正規化とキーワード処理
+            summary_text = normalize_llm_text(summary_text)
+            if summary_text:
+                summary_text = process_keywords_in_summary(summary_text)
+            abstract_text = normalize_llm_text(abstract_text)
+            
+            # abstract情報も含めて返す（辞書形式）
+            return {
+                'summary': summary_text,
+                'abstract': abstract_text,
+                'publication': publication_info
+            }
+        except json.JSONDecodeError as e:
+            # JSON解析に失敗した場合のロバスト処理
+            import re, json
+            print(f"JSON解析に失敗しました: {e}")
+            print(f"レスポンステキスト全体: {response_text}")
 
-        return summary_text
+            # コードフェンスを剥がしてテキストを取得
+            fence_pattern = r"```json\s*\n(.*?)\n```"
+            fence_match = re.search(fence_pattern, response_text, re.DOTALL)
+            raw = fence_match.group(1) if fence_match else response_text
+
+            # 無効なバックスラッシュを二重化してJSONとして再試行
+            def escape_invalid_backslashes(s: str) -> str:
+                # 有効なエスケープ(\n, \t, \/, \", \\)以外の \x を \\x に置換
+                return re.sub(r"\\(?![\\\"nt/])", r"\\\\", s)
+
+            fixed = escape_invalid_backslashes(raw)
+            try:
+                data = json.loads(fixed)
+                overview_text = data.get('overview', '')
+                abstract_text = data.get('abstract', '')
+                publication_info = data.get('publication', '')
+
+                overview_text = normalize_llm_text(overview_text)
+                if overview_text:
+                    overview_text = process_keywords_in_summary(overview_text)
+                abstract_text = normalize_llm_text(abstract_text)
+
+                return {
+                    'summary': overview_text,
+                    'abstract': abstract_text,
+                    'publication': publication_info
+                }
+            except Exception as e2:
+                print(f"修正後のJSON解析にも失敗: {e2}")
+                # 最後のフォールバック: overviewだけを正規表現で抜き出す
+                # "overview": "..." の最長一致を拾う
+                overview_match = re.search(r'"overview"\s*:\s*"([\s\S]*?)"\s*(,|})', raw)
+                abstract_match = re.search(r'"abstract"\s*:\s*"([\s\S]*?)"\s*(,|})', raw)
+                publication_match = re.search(r'"publication"\s*:\s*"([\s\S]*?)"\s*(,|})', raw)
+
+                overview_text = overview_match.group(1) if overview_match else response_text
+                abstract_text = abstract_match.group(1) if abstract_match else ''
+                publication_info = publication_match.group(1) if publication_match else ''
+
+                overview_text = normalize_llm_text(overview_text)
+                if overview_text:
+                    overview_text = process_keywords_in_summary(overview_text)
+                abstract_text = normalize_llm_text(abstract_text)
+
+                return {
+                    'summary': overview_text,
+                    'abstract': abstract_text,
+                    'publication': publication_info
+                }
     except Exception as e:
         print(f"テキストの要約中にエラーが発生しました: {e}")
         return None

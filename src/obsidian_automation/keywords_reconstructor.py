@@ -3,12 +3,12 @@ import os
 import re
 from typing import Dict, List
 import google.generativeai as genai
-from config import NOTE_FOLDER, GEMINI_API_KEY
+from .config import NOTE_FOLDER, GEMINI_API_KEY
 
 
 class KeywordsReconstructor:
-    def __init__(self, keywords_file="keywords.json",
-                 reconstruction_prompt_file="keywords_reconstruction.md"):
+    def __init__(self, keywords_file=None,
+                 reconstruction_prompt_file=None):
         """
         キーワード再構成クラス
 
@@ -17,8 +17,15 @@ class KeywordsReconstructor:
             reconstruction_prompt_file: 再構成プロンプトファイルのパス
         """
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        self.keywords_file = os.path.join(script_dir, keywords_file)
-        self.prompt_file = os.path.join(script_dir, reconstruction_prompt_file)
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(script_dir)))
+        
+        if keywords_file is None:
+            keywords_file = os.path.join(project_root, "data", "keywords.json")
+        self.keywords_file = keywords_file
+        
+        if reconstruction_prompt_file is None:
+            reconstruction_prompt_file = os.path.join(project_root, "prompt", "keywords_reconstruction.md")
+        self.prompt_file = reconstruction_prompt_file
         self.note_folder = NOTE_FOLDER
 
         # Gemini API設定

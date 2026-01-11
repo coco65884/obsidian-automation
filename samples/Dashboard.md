@@ -36,6 +36,8 @@ dv.table(
                             break;
                         } else if (inCommentsSection && line.trim() !== '') {
                             commentsLines.push(line);
+                            // 最初の一行だけを取得したら終了
+                            break;
                         }
                     }
                     commentsSection = commentsLines.join(' ').trim() || "コメントなし";

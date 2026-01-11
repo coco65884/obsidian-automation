@@ -6,15 +6,19 @@ from difflib import SequenceMatcher
 
 
 class KeywordManager:
-    def __init__(self, keywords_file="keywords.json"):
+    def __init__(self, keywords_file=None):
         """
         キーワード管理クラス
 
         Args:
             keywords_file: キーワード情報を保存するJSONファイルのパス
         """
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        self.keywords_file = os.path.join(script_dir, keywords_file)
+        if keywords_file is None:
+            # プロジェクトルートからdata/keywords.jsonを参照
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            project_root = os.path.dirname(os.path.dirname(os.path.dirname(script_dir)))
+            keywords_file = os.path.join(project_root, "data", "keywords.json")
+        self.keywords_file = keywords_file
         self.keywords_data = self._load_keywords()
 
     def _load_keywords(self) -> Dict:

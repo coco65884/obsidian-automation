@@ -1,55 +1,56 @@
 # Obsidian Automation
 
-研究論文のPDFファイルを自動的に処理して、Obsidianノートを生成するPythonツールです。Zoteroからメタデータを取得、Google Gemini APIを使用した要約生成、キーワード管理機能を提供します。APIにはgemini-2.5-flashを利用するので基本無料(なはず)です。
+A Python tool that automatically processes research paper PDF files and generates Obsidian notes. It retrieves metadata from Zotero, generates summaries using the Google Gemini API, and provides keyword management functionality. This tool uses gemini-2.5-flash API, which should be basically free.
+
 <video src="https://github.com/user-attachments/assets/20cf22c6-3504-4726-9719-4a9f61d7449c"></video>
 
-## 🚀 主な機能
+## 🚀 Key Features
 
-- **PDF自動処理**: PDFファイルからテキストを抽出
-- **AI要約生成**: Google Gemini APIを使用した論文要約の自動生成
-- **Zotero統合**: Zoteroライブラリから論文メタデータを自動取得
-- **キーワード管理**: 機械学習キーワードの自動抽出・管理
-- **Obsidianノート生成**: 構造化されたMarkdownノートの自動作成
-- **テンプレート対応**: カスタマイズ可能なノートテンプレート
+- **Automatic PDF Processing**: Extract text from PDF files
+- **AI Summary Generation**: Automatic paper summarization using Google Gemini API
+- **Zotero Integration**: Automatic retrieval of paper metadata from Zotero library
+- **Keyword Management**: Automatic extraction and management of machine learning keywords
+- **Obsidian Note Generation**: Automatic creation of structured Markdown notes
+- **Template Support**: Customizable note templates
 
-## 📋 前提条件
+## 📋 Prerequisites
 
-- Python 3.11 以上
-- [uv](https://github.com/astral-sh/uv) パッケージマネージャー
-- Google Gemini API アクセス
-- Zotero アカウント
-- Obsidian (ノート管理用)
+- Python 3.11 or higher
+- [uv](https://github.com/astral-sh/uv) package manager
+- Google Gemini API access
+- Zotero account
+- Obsidian (for note management)
 
-## 💡 準備
+## 💡 Preparation
 
-### Obsidianの準備
-1. Obsidianをインストール
-2. Obsidianを起動しVault(ワークスペース)を作成
-3. Vault内に論文を格納するディレクトリとノートを格納するディレクトリを作成
-4. Preference/Community pluginsから便利なプラグインを導入(推奨)
-   * Callout Manager: 自分オリジナルのコールアウトを作成できます。このプログラムを使う場合、Overviewを登録しておくと見やすくなります。
-   * Dataveiw: Noteの情報を元にtableが作成できます。Samples/Dashboard.mdに例があります。(設定でEnable Javascripts queriesをオンにしてください。)
-   * PDF++: 論文のスクショを撮ってリンクを貼り付けたり、引用して自分なりのメモを残したりできます。
-5. Samples/Dashboard.mdを自分のVaultに追加し、二箇所ある`YOUR_NOTE_FOLDER_HERE`の部分をノートを格納するディレクトリへのパスに置換(推奨)
-6. .obsidian/snippetsにSamples/paper.cssを追加し、Preference/Appearance/CSS snippetsからcssを適用(任意)
+### Obsidian Setup
+1. Install Obsidian
+2. Launch Obsidian and create a Vault (workspace)
+3. Create directories within the Vault for storing papers and notes
+4. Install useful plugins from Preference/Community plugins (recommended)
+   * Callout Manager: Create custom callouts. If using this program, registering "Overview" will improve readability.
+   * Dataview: Create tables based on note information. See Samples/Dashboard.md for an example. (Enable "Enable Javascript queries" in settings.)
+   * PDF++: Take screenshots of papers and paste links, or cite and leave your own notes.
+5. Add Samples/Dashboard.md to your Vault and replace `YOUR_NOTE_FOLDER_HERE` in two locations with the path to your notes directory (recommended)
+6. Add Samples/paper.css to .obsidian/snippets and apply the CSS from Preference/Appearance/CSS snippets (optional)
 
-### Zoteroの準備
-1. Zoteroをインストール
-2. ZoteroからPDFを転送するプラグイン`ZotMoov`を追加
-3. ZotMoovの出力先をObsidianの準備の3で追加した論文を格納するディレクトリに指定
-4. Preferences/General/File Renaming/Customize Filename Formatで{{ title truncate="100" }}を指定
+### Zotero Setup
+1. Install Zotero
+2. Add the `ZotMoov` plugin to transfer PDFs from Zotero
+3. Set ZotMoov's output destination to the paper storage directory created in Obsidian Setup step 3
+4. In Preferences/General/File Renaming/Customize Filename Format, specify {{ title truncate="100" }}
 
-## 🛠 環境設定
+## 🛠 Environment Setup
 
-### 1. uvのインストール
+### 1. Installing uv
 
-uvがインストールされていない場合は、以下のコマンドでインストールしてください：
+If uv is not installed, install it using the following commands:
 
 ```bash
 # macOS/Linux
 curl -LsSf https://astral.sh/uv/install.sh | sh
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
-source ~/.zshrcß
+source ~/.zshrc
 
 # Windows (PowerShell)
 irm https://astral.sh/uv/install.ps1 | iex
@@ -57,40 +58,40 @@ irm https://astral.sh/uv/install.ps1 | iex
 # Homebrew (macOS)
 brew install uv
 
-# pipx経由
+# via pipx
 pipx install uv
 ```
 
-### 2. プロジェクトのクローンと依存関係のインストール
+### 2. Clone the Project and Install Dependencies
 
 ```bash
-# リポジトリをクローン
+# Clone the repository
 git clone https://github.com/coco65884/obsidian-automation
 cd obsidian-automation
 
-# 依存関係をインストール
+# Install dependencies
 uv sync
 ```
 
-### 3. 仮想環境作成とアクティベート
+### 3. Create and Activate Virtual Environment
 
 ```bash
-# 仮想環境の作成
+# Create virtual environment
 uv venv
 
-# 仮想環境をアクティベート
+# Activate virtual environment
 source .venv/bin/activate
 
-# Windowsの場合
+# For Windows
 # .venv\Scripts\activate
 ```
 
-### 4. 環境変数ファイル（.env）の作成
+### 4. Create Environment Variables File (.env)
 
-プロジェクトルートに `.env` ファイルを作成し、以下の環境変数を設定してください。：
+Create a `.env` file in the project root and set the following environment variables:
 
 ```bash
-# .env ファイルの例
+# .env file example
 ZOTERO_API_KEY=your_zotero_api_key_here
 ZOTERO_USER_ID=your_zotero_user_id_here
 GEMINI_API_KEY=your_gemini_api_key_here
@@ -99,169 +100,182 @@ NOTE_FOLDER=/path/to/your/obsidian/vault/folder
 TEMPLATE_PATH=./template.md
 ```
 
-## 🔑 APIキーの取得方法
+## 🔑 How to Obtain API Keys
 
-### Google Gemini API キー
+### Google Gemini API Key
 
-1. [Google AI Studio](https://aistudio.google.com/) にアクセス
-2. Googleアカウントでログイン
-3. 「Get API key」をクリック
-4. 「Create API key」を選択
-5. プロジェクトを選択（新規作成も可能）
-6. 生成されたAPIキーをコピーして `.env` ファイルの `GEMINI_API_KEY` に設定
+1. Visit [Google AI Studio](https://aistudio.google.com/)
+2. Sign in with your Google account
+3. Click "Get API key"
+4. Select "Create API key"
+5. Select a project (or create a new one)
+6. Copy the generated API key and set it in the `.env` file as `GEMINI_API_KEY`
 
-### Zotero API キーとユーザーID
+### Zotero API Key and User ID
 
-#### APIキーの取得：
-1. [Zotero](https://www.zotero.org/) にログイン
-2. [Settings > Feeds/API](https://www.zotero.org/settings/keys) にアクセス
-3. 「Create new private key」をクリック
-4. 必要な権限を設定：
+#### Obtaining the API Key:
+1. Log in to [Zotero](https://www.zotero.org/)
+2. Go to [Settings > Feeds/API](https://www.zotero.org/settings/keys)
+3. Click "Create new private key"
+4. Set the required permissions:
    - **Personal Library**: Read access
-   - **Default Group Permissions**: Read access (グループライブラリを使用する場合)
-5. 「Save Key」をクリック
-6. 生成されたAPIキーをコピーして `.env` ファイルの `ZOTERO_API_KEY` に設定
+   - **Default Group Permissions**: Read access (if using group libraries)
+5. Click "Save Key"
+6. Copy the generated API key and set it in the `.env` file as `ZOTERO_API_KEY`
 
-#### ユーザーIDの取得：
-1. Zoteroにログイン後、[Feeds/API settings](https://www.zotero.org/settings/keys) ページにアクセス
-2. ページ上部に表示される「Your userID for use in API calls is XXXXXX」の数字をコピー
-3. この数字を `.env` ファイルの `ZOTERO_USER_ID` に設定
+#### Obtaining the User ID:
+1. After logging in to Zotero, go to the [Feeds/API settings](https://www.zotero.org/settings/keys) page
+2. Copy the number displayed at the top of the page: "Your userID for use in API calls is XXXXXX"
+3. Set this number in the `.env` file as `ZOTERO_USER_ID`
 
-## 📁 ディレクトリ構成
+## 📁 Directory Structure
 
 ```
 obsidian-automation/
-├── main.py                     # メイン実行ファイル
-├── config.py                   # 設定ファイル
-├── pdf_processor.py            # PDF処理
-├── zotero_integrator.py        # Zotero統合
-├── keyword_manager.py          # キーワード管理
-├── obsidian_note_creator.py    # ノート作成
-├── template.md                 # ノートテンプレート
-├── prompt/                     # プロンプトファイル
-│   ├── custom_prompt.md        # AI要約用カスタムプロンプト
-│   └── keywords_reconstruction.md # キーワード再構成用プロンプト
-├── keywords.json               # キーワードデータベース
-├── .env                        # 環境変数ファイル（要作成）
-├── tests/                      # テストファイル
-├── pyproject.toml              # プロジェクト設定
-└── README.md                   # このファイル
+├── main.py                     # Main execution file
+├── config.py                   # Configuration file
+├── pdf_processor.py            # PDF processing
+├── zotero_integrator.py        # Zotero integration
+├── keyword_manager.py          # Keyword management
+├── obsidian_note_creator.py    # Note creation
+├── template.md                 # Note template
+├── prompt/                     # Prompt files
+│   ├── custom_prompt.md        # Custom prompt for AI summarization (Japanese)
+│   ├── custom_prompt-en.md     # Custom prompt for AI summarization (English)
+│   ├── keywords_reconstruction.md  # Prompt for keyword reconstruction (Japanese)
+│   └── keywords_reconstruction-en.md  # Prompt for keyword reconstruction (English)
+├── keywords.json               # Keyword database
+├── .env                        # Environment variables file (needs to be created)
+├── tests/                      # Test files
+├── pyproject.toml              # Project configuration
+└── README.md                   # This file
 ```
 
-## 🚦 使用方法
+## 🚦 Usage
 
-### 基本的な使用方法
+### Basic Usage
 
 ```bash
-# 仮想環境をアクティベート（まだの場合）
+# Activate virtual environment (if not already activated)
 source .venv/bin/activate
 
-# メインスクリプトを実行
+# Run main script
 python main.py
 ```
 
-このコマンドを実行すると：
-1. `PDF_FOLDER` 内のPDFファイルをスキャン
-2. 各PDFからテキストを抽出
-3. Google Gemini APIで要約を生成
-4. Zoteroからメタデータを取得
-5. キーワードを抽出・管理
-6. 構造化されたObsidianノートを `NOTE_FOLDER` に作成
+Running this command will:
+1. Scan PDF files in `PDF_FOLDER`
+2. Extract text from each PDF
+3. Generate summaries with Google Gemini API
+4. Retrieve metadata from Zotero
+5. Extract and manage keywords
+6. Create structured Obsidian notes in `NOTE_FOLDER`
 
-## 🎨 カスタマイズ
+## ⚠️ Important Note for English Users
 
-### ノートテンプレートの編集
+**Note:** By default, error messages are displayed in Japanese, and the prompts provided in the `prompt/` directory are written in Japanese.
 
-`template.md` ファイルを編集することで、生成されるノートの構造をカスタマイズできます。利用可能なプレースホルダー：
+To use English prompts:
+- **Option 1**: Copy the content from `prompt/custom_prompt-en.md` to `prompt/custom_prompt.md` (overwrite the original file)
+- **Option 2**: Copy the content from `prompt/keywords_reconstruction-en.md` to `prompt/keywords_reconstruction.md` (overwrite the original file)
+- **Option 3**: Modify the code to use the `-en.md` files directly
 
-- `{{title}}` - 論文タイトル
-- `{{authors}}` - 著者一覧
-- `{{date}}` - 発表日
+Alternatively, you can modify the prompt files to use your preferred language for AI-generated summaries and keyword management.
+
+## 🎨 Customization
+
+### Editing Note Template
+
+You can customize the structure of generated notes by editing the `template.md` file. Available placeholders:
+
+- `{{title}}` - Paper title
+- `{{authors}}` - Author list
+- `{{date}}` - Publication date
 - `{{DOI}}` - DOI
-- `{{abstractNote}}` - アブストラクト
-- `{{publicationTitle}}` - 出版物名
-- その他多数のZoteroフィールド
+- `{{abstractNote}}` - Abstract
+- `{{publicationTitle}}` - Publication name
+- Many other Zotero fields
 
-### AI要約プロンプトの編集
+### Editing AI Summary Prompt
 
-`prompt/custom_prompt.md` ファイルを編集することで、AI要約の生成方法をカスタマイズできます。
+You can customize how AI summaries are generated by editing the `prompt/custom_prompt.md` (or `prompt/custom_prompt-en.md` for English) file.
 
-### キーワード管理
+### Keyword Management
 
-キーワードは `keywords.json` で管理されます。新しいキーワードは自動的に追加されますが、手動で編集することも可能です。
-また、`prompt/keywords_reconstruction.md`ではキーワード再構成時の指示を変更することが可能です。
+Keywords are managed in `keywords.json`. New keywords are automatically added, but you can also edit manually.
+You can also change the instructions for keyword reconstruction in `prompt/keywords_reconstruction.md` (or `prompt/keywords_reconstruction-en.md` for English).
 
-## 🧪 テスト
+## 🧪 Testing
 
-### テストの実行
+### Running Tests
 
 ```bash
-# 仮想環境をアクティベート（まだの場合）
+# Activate virtual environment (if not already activated)
 source .venv/bin/activate
 
-# 全てのテストを実行
+# Run all tests
 pytest tests
 
-# 詳細な出力でテスト実行
+# Run tests with detailed output
 pytest tests -v
 
-# 特定のテストファイルのみ実行
+# Run specific test file only
 pytest tests/test_keyword_manager.py -v
 
-# カバレッジレポート付きでテスト実行
+# Run tests with coverage report
 pytest tests --cov=. --cov-report=html
 ```
 
-### テストファイル一覧
+### Test Files List
 
-- `tests/test_keyword_manager.py` - キーワード管理機能のテスト
-- `tests/test_pdf_processor.py` - PDF処理機能のテスト
-- `tests/test_zotero_integrator.py` - Zotero統合機能のテスト
-- `tests/test_obsidian_note_creator.py` - ノート作成機能のテスト
-- `tests/test_main.py` - メイン処理のテスト
+- `tests/test_keyword_manager.py` - Tests for keyword management features
+- `tests/test_pdf_processor.py` - Tests for PDF processing features
+- `tests/test_zotero_integrator.py` - Tests for Zotero integration features
+- `tests/test_obsidian_note_creator.py` - Tests for note creation features
+- `tests/test_main.py` - Tests for main processing
 
-## 🐛 トラブルシューティング
+## 🐛 Troubleshooting
 
-### よくある問題
+### Common Issues
 
-1. **APIキーエラー**
-   - `.env` ファイルが正しく作成されているか確認
-   - APIキーが有効かブラウザで確認
+1. **API Key Error**
+   - Verify that the `.env` file is correctly created
+   - Confirm API keys are valid in your browser
 
-2. **PDFテキスト抽出エラー**
-   - PDFファイルが破損していないか確認
-   - PyPDF2で処理できない形式の可能性
+2. **PDF Text Extraction Error**
+   - Check if the PDF file is corrupted
+   - May be a format that PyPDF2 cannot process
 
-3. **Zotero接続エラー**
-   - インターネット接続を確認
-   - ZoteroのAPIキーとユーザーIDが正しいか確認
+3. **Zotero Connection Error**
+   - Check internet connection
+   - Verify Zotero API key and user ID are correct
 
-4. **フォルダパスエラー**
-   - `PDF_FOLDER` と `NOTE_FOLDER` のパスが存在するか確認
-   - パスに特殊文字が含まれていないか確認
+4. **Folder Path Error**
+   - Confirm that `PDF_FOLDER` and `NOTE_FOLDER` paths exist
+   - Check if paths contain special characters
 
-### ログの確認
+### Checking Logs
 
-プログラム実行時に出力されるログを確認することで、問題の原因を特定できます。
+You can identify the cause of problems by checking the logs output during program execution.
 
-## 🤝 開発に参加する
+## 🤝 Contributing
 
-1. このリポジトリをフォーク
-2. 機能ブランチを作成 (`git checkout -b your_git_ID/issue#number`)
-3. 変更をコミット (`git commit -m 'Add amazing feature'`)
-4. ブランチにプッシュ (`git push origin your_git_ID/issue#number`)
-5. プルリクエストを作成
+1. Fork this repository
+2. Create a feature branch (`git checkout -b your_git_ID/issue#number`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin your_git_ID/issue#number`)
+5. Create a Pull Request
 
-### 開発環境の設定
+### Development Environment Setup
 
 ```bash
-# 開発用依存関係を含めてインストール
+# Install including development dependencies
 uv sync --group dev
 
-# 仮想環境をアクティベート
+# Activate virtual environment
 source .venv/bin/activate
 ```
 
-## 📞 サポート
+## 📞 Support
 
-問題が発生した場合は、[Issues](https://github.com/coco65884/obsidian-automation/issues) でお知らせください。
+If you encounter any issues, please let us know in [Issues](https://github.com/coco65884/obsidian-automation/issues).

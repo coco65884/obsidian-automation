@@ -1,11 +1,11 @@
 import os
 import glob
 import argparse
-from config import ZOTERO_USER_ID, PDF_FOLDER, NOTE_FOLDER
-from pdf_processor import extract_text_from_pdf, summarize_text
-from zotero_integrator import get_zotero_item_info
-from obsidian_note_creator import create_obsidian_note
-from keywords_reconstructor import KeywordsReconstructor
+from src.obsidian_automation.config import ZOTERO_USER_ID, PDF_FOLDER, NOTE_FOLDER
+from src.obsidian_automation.pdf_processor import extract_text_from_pdf, summarize_text
+from src.obsidian_automation.zotero_integrator import get_zotero_item_info
+from src.obsidian_automation.obsidian_note_creator import create_obsidian_note
+from src.obsidian_automation.keywords_reconstructor import KeywordsReconstructor
 
 
 def get_existing_notes():

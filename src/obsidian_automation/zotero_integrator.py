@@ -1,5 +1,5 @@
 from pyzotero import zotero
-from config import ZOTERO_USER_ID, ZOTERO_API_KEY
+from .config import ZOTERO_USER_ID, ZOTERO_API_KEY
 import re
 
 

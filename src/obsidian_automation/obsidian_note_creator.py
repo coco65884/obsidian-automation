@@ -1,6 +1,6 @@
 import os
 import re
-from config import NOTE_FOLDER, TEMPLATE_PATH
+from .config import NOTE_FOLDER, TEMPLATE_PATH
 from datetime import datetime
 
 

@@ -1,7 +1,7 @@
 import PyPDF2
 import google.generativeai as genai
 import os
-from keyword_manager import KeywordManager
+from .keyword_manager import KeywordManager
 
 
 def extract_text_from_pdf(pdf_path):
@@ -57,7 +57,8 @@ def load_custom_prompt():
     """custom_prompt.mdからテンプレートを読み込む"""
     try:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        prompt_path = os.path.join(script_dir, "prompt", "custom_prompt.md")
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(script_dir)))
+        prompt_path = os.path.join(project_root, "prompt", "custom_prompt.md")
         with open(prompt_path, 'r', encoding='utf-8') as f:
             content = f.read()
 

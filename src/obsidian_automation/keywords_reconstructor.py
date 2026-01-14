@@ -17,7 +17,7 @@ class KeywordsReconstructor:
             reconstruction_prompt_file: 再構成プロンプトファイルのパス
         """
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.dirname(os.path.dirname(os.path.dirname(script_dir)))
+        project_root = os.path.dirname(os.path.dirname(script_dir))
         
         if keywords_file is None:
             keywords_file = os.path.join(project_root, "data", "keywords.json")

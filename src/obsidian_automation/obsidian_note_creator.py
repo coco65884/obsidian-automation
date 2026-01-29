@@ -120,26 +120,27 @@ def replace_llm_placeholders(content, llm_data):
     if keyword_text:
         keyword_text = format_blockquote_content(keyword_text)
     
-    # LLMデータの置換
+    # LLMデータの全フィールドを動的に置換
+    # 特別処理が必要なフィールド（glossary, keyword）を先に処理
     llm_replacements = {
         '{{glossary}}': glossary_text,
-        '{{task}}': llm_data.get('task', ''),
-        '{{claim}}': llm_data.get('claim', ''),
-        '{{novelty}}': llm_data.get('novelty', ''),
-        '{{keyidea}}': llm_data.get('keyidea', ''),
-        '{{method}}': llm_data.get('method', ''),
-        '{{result}}': llm_data.get('result', ''),
-        '{{discussion}}': '',  # resultフィールドに含まれる想定
-        '{{ablation}}': llm_data.get('ablation', ''),
-        '{{field}}': llm_data.get('field', ''),
-        '{{theme}}': llm_data.get('theme', ''),
         '{{keyword}}': keyword_text,
     }
     
+    # その他の全フィールドを自動追加
+    for field, value in llm_data.items():
+        placeholder = f'{{{{{field}}}}}'
+        if placeholder not in llm_replacements:  # 既に処理済みのフィールドはスキップ
+            llm_replacements[placeholder] = value if value else ''
+    
+    # 置換を実行
     for placeholder, value in llm_replacements.items():
         if placeholder in content:
-            print(f"LLM置換実行: {placeholder} -> '{value[:50]}...' ({len(value)} 文字)")
-            content = content.replace(placeholder, str(value))
+            value_str = str(value) if value else ''
+            value_preview = value_str[:50]
+            print(f"LLM置換実行: {placeholder} -> "
+                  f"'{value_preview}...' ({len(value_str)} 文字)")
+            content = content.replace(placeholder, value_str)
     
     return content
 

@@ -183,20 +183,16 @@ def summarize_text(text, model_name="gemini-2.5-flash"):
             # JSONを解析してフィールドを取得
             json_data = json.loads(json_text)
             
-            # すべてのフィールドを抽出して正規化
+            # すべてのフィールドを自動抽出して正規化
             result = {}
-            fields = ['abstract', 'glossary', 'task', 'claim', 'novelty', 'keyidea', 
-                     'method', 'result', 'ablation', 'publication', 'field', 'theme', 'keyword']
-            
-            for field in fields:
-                value = json_data.get(field, '')
+            for field, value in json_data.items():
                 if value:
-                    result[field] = normalize_llm_text(value)
+                    result[field] = normalize_llm_text(value) if isinstance(value, str) else value
                 else:
                     result[field] = ''
             
             print(f"JSON解析成功 - 抽出フィールド数: {len([k for k, v in result.items() if v])}")
-            print(f"フィールド: publication={result.get('publication', '')}, field={result.get('field', '')}, theme={result.get('theme', '')}")
+            print(f"抽出されたフィールド: {list(result.keys())}")
             
             # キーワード処理
             if result.get('keyword'):
@@ -228,13 +224,11 @@ def summarize_text(text, model_name="gemini-2.5-flash"):
             try:
                 data = json.loads(fixed)
                 result = {}
-                fields = ['abstract', 'glossary', 'task', 'claim', 'novelty', 'keyidea', 
-                         'method', 'result', 'ablation', 'publication', 'field', 'theme', 'keyword']
                 
-                for field in fields:
-                    value = data.get(field, '')
+                # すべてのフィールドを自動抽出して正規化
+                for field, value in data.items():
                     if value:
-                        result[field] = normalize_llm_text(value)
+                        result[field] = normalize_llm_text(value) if isinstance(value, str) else value
                     else:
                         result[field] = ''
                 
@@ -250,15 +244,13 @@ def summarize_text(text, model_name="gemini-2.5-flash"):
                 print(f"修正後のJSON解析にも失敗: {e2}")
                 # 最後のフォールバック: 正規表現で各フィールドを抜き出す
                 result = {}
-                fields = ['abstract', 'glossary', 'task', 'claim', 'novelty', 'keyidea', 
-                         'method', 'result', 'ablation', 'publication', 'field', 'theme', 'keyword']
                 
-                for field in fields:
-                    match = re.search(rf'"{field}"\s*:\s*"([\s\S]*?)"\s*(,|}})', raw)
-                    if match:
-                        result[field] = normalize_llm_text(match.group(1))
-                    else:
-                        result[field] = ''
+                # JSONから全フィールド名を抽出
+                field_pattern = r'"(\w+)"\s*:\s*"([\s\S]*?)"\s*(,|})'
+                matches = re.findall(field_pattern, raw)
+                
+                for field, value, _ in matches:
+                    result[field] = normalize_llm_text(value)
                 
                 # キーワード処理
                 if result.get('keyword'):

@@ -18,17 +18,32 @@ rating: 0
 > [[{{title}}.pdf]]
 
 > [!Abstract]
-> {{abstractNote}}
->
+> {{abstract}}
 
 > [!Glossary]
 {{glossary}}
 
 # Contribution
-## Task
+## Content
+### Task
 {{task}}
-## Claim
+### Setting
+{{setting}}
+### Input
+{{input}}
+### Output
+{{output}}
+### Dataset
+{{dataset}}
+
+## Main Argument
+### Claim
 {{claim}}
+### Existing Issue
+{{issue}}
+### Improvement
+{{improve}}
+
 ## Novelty
 {{novelty}}
 

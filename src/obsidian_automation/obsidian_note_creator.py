@@ -83,7 +83,68 @@ def clean_filename(filename):
     return filename.strip()
 
 
-def replace_zotero_placeholders(content, zotero_data, llm_publication_info=None):
+def format_blockquote_content(text):
+    """テキストをblockquote形式に整形（各行の前に> を追加）"""
+    if not text:
+        return ''
+    
+    lines = text.split('\n')
+    formatted_lines = []
+    for line in lines:
+        if line.strip():  # 空行でない場合
+            if not line.startswith('>'):
+                formatted_lines.append(f"> {line}")
+            else:
+                formatted_lines.append(line)
+        else:  # 空行の場合
+            formatted_lines.append("> ")
+    
+    return '\n'.join(formatted_lines)
+
+
+def replace_llm_placeholders(content, llm_data):
+    """LLMから取得したデータを{{}}記法で置換"""
+    if not llm_data:
+        return content
+    
+    print("LLMデータで置換を開始...")
+    print(f"利用可能なLLMフィールド: {list(llm_data.keys())}")
+    
+    # glossaryはblockquote内に配置されるため特別処理
+    glossary_text = llm_data.get('glossary', '')
+    if glossary_text:
+        glossary_text = format_blockquote_content(glossary_text)
+    
+    # keywordもblockquote内に配置されるため特別処理
+    keyword_text = llm_data.get('keyword', '')
+    if keyword_text:
+        keyword_text = format_blockquote_content(keyword_text)
+    
+    # LLMデータの置換
+    llm_replacements = {
+        '{{glossary}}': glossary_text,
+        '{{task}}': llm_data.get('task', ''),
+        '{{claim}}': llm_data.get('claim', ''),
+        '{{novelty}}': llm_data.get('novelty', ''),
+        '{{keyidea}}': llm_data.get('keyidea', ''),
+        '{{method}}': llm_data.get('method', ''),
+        '{{result}}': llm_data.get('result', ''),
+        '{{discussion}}': '',  # resultフィールドに含まれる想定
+        '{{ablation}}': llm_data.get('ablation', ''),
+        '{{field}}': llm_data.get('field', ''),
+        '{{theme}}': llm_data.get('theme', ''),
+        '{{keyword}}': keyword_text,
+    }
+    
+    for placeholder, value in llm_replacements.items():
+        if placeholder in content:
+            print(f"LLM置換実行: {placeholder} -> '{value[:50]}...' ({len(value)} 文字)")
+            content = content.replace(placeholder, str(value))
+    
+    return content
+
+
+def replace_zotero_placeholders(content, zotero_data, llm_data=None):
     """Zoteroの{{}}記法をAPIデータで置換"""
     if not zotero_data:
         return content
@@ -92,7 +153,8 @@ def replace_zotero_placeholders(content, zotero_data, llm_publication_info=None)
     print(f"利用可能なZoteroフィールド: {list(zotero_data.keys())}")
     
     # LLMから取得したpublication情報があれば、zotero_dataに追加
-    if llm_publication_info:
+    if llm_data and llm_data.get('publication'):
+        llm_publication_info = llm_data.get('publication')
         print(f"LLMから取得したpublication情報: {llm_publication_info}")
         # LLMのpublication情報をpublicationTitleとして使用
         if 'publicationTitle' not in zotero_data or not zotero_data.get('publicationTitle'):
@@ -507,17 +569,11 @@ def create_obsidian_note(pdf_path, zotero_data, summary_data):
 
         # 要約の追加
         content += "## 要約\n"
-        # summary_dataが辞書の場合は'summary'キーから取得、そうでなければそのまま使用
         if isinstance(summary_data, dict):
-            summary_text = summary_data.get('summary', '')
             abstract_text = summary_data.get('abstract', '')
-            llm_publication_info = summary_data.get('publication', '')
+            content += abstract_text if abstract_text else "要約は生成されませんでした。\n"
         else:
-            summary_text = summary_data
-            abstract_text = ''
-            llm_publication_info = ''
-        
-        content += summary_text if summary_text else "要約は生成されませんでした。\n"
+            content += str(summary_data) if summary_data else "要約は生成されませんでした。\n"
         content += "\n"
     else:
         # テンプレートを使用してノートを作成
@@ -526,52 +582,20 @@ def create_obsidian_note(pdf_path, zotero_data, summary_data):
         # タイトルを置換
         content = content.replace("{title}", note_title)
 
-        # summary_dataを適切に処理
-        if isinstance(summary_data, dict):
-            summary_text = summary_data.get('summary', '')
-            abstract_text = summary_data.get('abstract', '')
-            llm_publication_info = summary_data.get('publication', '')
-        else:
-            summary_text = summary_data
-            abstract_text = ''
-            llm_publication_info = ''
+        # summary_dataから情報を取得
+        llm_data = summary_data if isinstance(summary_data, dict) else {}
         
         # LLMから取得したabstractがあれば、zotero_dataに追加
+        abstract_text = llm_data.get('abstract', '')
         if abstract_text and zotero_data:
             print(f"LLMから取得したabstract情報を使用します（長さ: {len(abstract_text)}）")
             zotero_data['abstractNote'] = abstract_text
 
-        # >[!Overview]の部分に要約を挿入（+の有無に関わらず対応）
-        overview_pattern = r'>\s*\[!Overview\]\s*[+\-]?(?=\s|$)'
-        overview_match = re.search(overview_pattern, content)
+        # まずLLMデータの置換を実行
+        content = replace_llm_placeholders(content, llm_data)
 
-        if overview_match:
-            overview_tag = overview_match.group(0).rstrip()  # 改行を除去
-            if summary_text:
-                # 要約の各行の先頭に > を付ける
-                summary_lines = summary_text.split('\n')
-                formatted_summary_lines = []
-                for line in summary_lines:
-                    if line.strip():  # 空行でない場合
-                        if not line.startswith('>'):
-                            formatted_summary_lines.append(f"> {line}")
-                        else:
-                            formatted_summary_lines.append(line)
-                    else:  # 空行の場合
-                        formatted_summary_lines.append("> ")
-
-                formatted_summary = '\n'.join(formatted_summary_lines)
-
-                # [!Overview]の下に要約を挿入
-                content = content.replace(
-                    overview_tag, f"{overview_tag}\n{formatted_summary}")
-            else:
-                # 要約がない場合は[!Overview]はそのまま残し、下にメッセージを追加
-                content = content.replace(
-                    overview_tag, f"{overview_tag}\n> 要約は生成されませんでした。")
-
-        # Zoteroの{{}}記法を置換（LLMのpublication情報も渡す）
-        content = replace_zotero_placeholders(content, zotero_data, llm_publication_info)
+        # 次にZoteroの{{}}記法を置換
+        content = replace_zotero_placeholders(content, zotero_data, llm_data)
 
         # 古いプレースホルダーもサポート（後方互換性のため）
         if zotero_data:

@@ -91,44 +91,6 @@ def get_available_models():
         return []
 
 
-def process_keywords_in_summary(summary_text):
-    """要約テキストからキーワードを抽出・処理し、最終的な要約を返す"""
-    try:
-        keyword_manager = KeywordManager()
-
-        # キーワードを抽出・処理
-        processed_keywords = keyword_manager.process_generated_keywords(
-            summary_text)
-
-        if processed_keywords:
-            # 処理済みキーワードで置き換え
-            keyword_lines = []
-            for keyword in processed_keywords:
-                keyword_lines.append(f"> #{keyword}")
-
-            # Keywords セクションを新しいキーワードで置き換え
-            import re
-            keywords_pattern = (r'(> ### \*\*Keywords\*\*\s*\n)(.*?)'
-                                r'(?=\n\n|\n#|\nObsidian Links|\Z)')
-
-            def replace_keywords(match):
-                header = match.group(1)
-                return header + "\n".join(keyword_lines) + "\n"
-
-            updated_summary = re.sub(keywords_pattern, replace_keywords,
-                                     summary_text, flags=re.DOTALL)
-
-            if updated_summary != summary_text:
-                print(f"キーワードを処理済みキーワードで置き換えました: {processed_keywords}")
-                return updated_summary
-
-        return summary_text
-
-    except Exception as e:
-        print(f"キーワード処理中にエラーが発生しました: {e}")
-        return summary_text
-
-
 def normalize_llm_text(markdown_text: str) -> str:
     """LLM出力内のLaTeX系やリテラル改行表記をMarkdownの改行に正規化する"""
     if not markdown_text:
@@ -220,26 +182,32 @@ def summarize_text(text, model_name="gemini-2.5-flash"):
             
             # JSONを解析してフィールドを取得
             json_data = json.loads(json_text)
-            summary_text = json_data.get('overview', '')
-            abstract_text = json_data.get('abstract', '')
             
-            # publication情報も保存（後で使用するため）
-            publication_info = json_data.get('publication', '')
+            # すべてのフィールドを抽出して正規化
+            result = {}
+            fields = ['abstract', 'glossary', 'task', 'claim', 'novelty', 'keyidea', 
+                     'method', 'result', 'ablation', 'publication', 'field', 'theme', 'keyword']
             
-            print(f"JSON解析成功 - overview長さ: {len(summary_text)}, abstract長さ: {len(abstract_text)}, publication: {publication_info}")
+            for field in fields:
+                value = json_data.get(field, '')
+                if value:
+                    result[field] = normalize_llm_text(value)
+                else:
+                    result[field] = ''
             
-            # テキスト正規化とキーワード処理
-            summary_text = normalize_llm_text(summary_text)
-            if summary_text:
-                summary_text = process_keywords_in_summary(summary_text)
-            abstract_text = normalize_llm_text(abstract_text)
+            print(f"JSON解析成功 - 抽出フィールド数: {len([k for k, v in result.items() if v])}")
+            print(f"フィールド: publication={result.get('publication', '')}, field={result.get('field', '')}, theme={result.get('theme', '')}")
             
-            # abstract情報も含めて返す（辞書形式）
-            return {
-                'summary': summary_text,
-                'abstract': abstract_text,
-                'publication': publication_info
-            }
+            # キーワード処理
+            if result.get('keyword'):
+                keyword_manager = KeywordManager()
+                processed_keywords = keyword_manager.process_generated_keywords(result['keyword'])
+                if processed_keywords:
+                    # キーワードを改行区切りの#付き形式に整形
+                    result['keyword'] = '\n> '.join([f'#{kw}' for kw in processed_keywords])
+                    print(f"処理済みキーワード: {result['keyword']}")
+            
+            return result
         except json.JSONDecodeError as e:
             # JSON解析に失敗した場合のロバスト処理
             import re, json
@@ -259,42 +227,47 @@ def summarize_text(text, model_name="gemini-2.5-flash"):
             fixed = escape_invalid_backslashes(raw)
             try:
                 data = json.loads(fixed)
-                overview_text = data.get('overview', '')
-                abstract_text = data.get('abstract', '')
-                publication_info = data.get('publication', '')
-
-                overview_text = normalize_llm_text(overview_text)
-                if overview_text:
-                    overview_text = process_keywords_in_summary(overview_text)
-                abstract_text = normalize_llm_text(abstract_text)
-
-                return {
-                    'summary': overview_text,
-                    'abstract': abstract_text,
-                    'publication': publication_info
-                }
+                result = {}
+                fields = ['abstract', 'glossary', 'task', 'claim', 'novelty', 'keyidea', 
+                         'method', 'result', 'ablation', 'publication', 'field', 'theme', 'keyword']
+                
+                for field in fields:
+                    value = data.get(field, '')
+                    if value:
+                        result[field] = normalize_llm_text(value)
+                    else:
+                        result[field] = ''
+                
+                # キーワード処理
+                if result.get('keyword'):
+                    keyword_manager = KeywordManager()
+                    processed_keywords = keyword_manager.process_generated_keywords(result['keyword'])
+                    if processed_keywords:
+                        result['keyword'] = '\n> '.join([f'#{kw}' for kw in processed_keywords])
+                
+                return result
             except Exception as e2:
                 print(f"修正後のJSON解析にも失敗: {e2}")
-                # 最後のフォールバック: overviewだけを正規表現で抜き出す
-                # "overview": "..." の最長一致を拾う
-                overview_match = re.search(r'"overview"\s*:\s*"([\s\S]*?)"\s*(,|})', raw)
-                abstract_match = re.search(r'"abstract"\s*:\s*"([\s\S]*?)"\s*(,|})', raw)
-                publication_match = re.search(r'"publication"\s*:\s*"([\s\S]*?)"\s*(,|})', raw)
-
-                overview_text = overview_match.group(1) if overview_match else response_text
-                abstract_text = abstract_match.group(1) if abstract_match else ''
-                publication_info = publication_match.group(1) if publication_match else ''
-
-                overview_text = normalize_llm_text(overview_text)
-                if overview_text:
-                    overview_text = process_keywords_in_summary(overview_text)
-                abstract_text = normalize_llm_text(abstract_text)
-
-                return {
-                    'summary': overview_text,
-                    'abstract': abstract_text,
-                    'publication': publication_info
-                }
+                # 最後のフォールバック: 正規表現で各フィールドを抜き出す
+                result = {}
+                fields = ['abstract', 'glossary', 'task', 'claim', 'novelty', 'keyidea', 
+                         'method', 'result', 'ablation', 'publication', 'field', 'theme', 'keyword']
+                
+                for field in fields:
+                    match = re.search(rf'"{field}"\s*:\s*"([\s\S]*?)"\s*(,|}})', raw)
+                    if match:
+                        result[field] = normalize_llm_text(match.group(1))
+                    else:
+                        result[field] = ''
+                
+                # キーワード処理
+                if result.get('keyword'):
+                    keyword_manager = KeywordManager()
+                    processed_keywords = keyword_manager.process_generated_keywords(result['keyword'])
+                    if processed_keywords:
+                        result['keyword'] = '\n> '.join([f'#{kw}' for kw in processed_keywords])
+                
+                return result
     except Exception as e:
         print(f"テキストの要約中にエラーが発生しました: {e}")
         return None

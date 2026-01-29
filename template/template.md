@@ -22,11 +22,14 @@ rating: 0
 >
 
 > [!Glossary]
-> {{glossary}}
+{{glossary}}
 
 # Contribution
+## Task
 {{task}}
+## Claim
 {{claim}}
+## Novelty
 {{novelty}}
 
 # KeyIdea
@@ -40,6 +43,8 @@ rating: 0
 
 # Ablation
 {{ablation}}
+
+# Memo
 
 # Comments
 

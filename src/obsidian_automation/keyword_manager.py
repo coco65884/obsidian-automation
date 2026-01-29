@@ -290,25 +290,40 @@ class KeywordManager:
         """キーワード生成のためのプロンプトを作成"""
 
         field_list = ', '.join(self.keywords_data["categories"]["field"])
+        theme_list = ', '.join(self.keywords_data["categories"].get("theme", []))
         task_list = ', '.join(self.keywords_data["categories"]["task"])
         method_list = ', '.join(self.keywords_data["categories"]["method"])
         architecture_list = ', '.join(
             self.keywords_data["categories"]["architecture"])
 
         prompt = f"""
-> - 分野: {field_list}
-> - タスク: {task_list}
-> - 手法: {method_list}
-> - アーキテクチャ: {architecture_list}"""
+> - 分野(Field): {field_list}
+> - テーマ(Theme): {theme_list}
+> - タスク(Task): {task_list}
+> - 手法(Method): {method_list}
+> - アーキテクチャ(Architecture): {architecture_list}"""
 
         return prompt
 
     def extract_keywords_from_text(self, text: str) -> List[str]:
         """テキストからキーワード（#で始まる単語）を抽出"""
+        if not text:
+            return []
+        
         # #で始まる単語を抽出（改行や空白で区切られた）
-        pattern = r'#([A-Za-z][A-Za-z0-9]*(?:[A-Z][a-z0-9]*)*)'
+        # ハイフンやアンダースコアを含むキーワードにも対応
+        pattern = r'#([A-Za-z][A-Za-z0-9\-_]*(?:[A-Z][a-z0-9]*)*)'
         matches = re.findall(pattern, text)
-        return matches
+        
+        # 重複を除去しつつ順序を保持
+        seen = set()
+        unique_matches = []
+        for match in matches:
+            if match not in seen:
+                seen.add(match)
+                unique_matches.append(match)
+        
+        return unique_matches
 
     def process_generated_keywords(self, generated_text: str) -> List[str]:
         """

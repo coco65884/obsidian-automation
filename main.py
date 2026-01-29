@@ -1,11 +1,15 @@
 import os
 import glob
 import argparse
-from src.obsidian_automation.config import ZOTERO_USER_ID, PDF_FOLDER, NOTE_FOLDER
-from src.obsidian_automation.pdf_processor import extract_text_from_pdf, summarize_text
+from src.obsidian_automation.config import (ZOTERO_USER_ID, PDF_FOLDER,
+                                            NOTE_FOLDER)
+from src.obsidian_automation.pdf_processor import (extract_text_from_pdf,
+                                                   summarize_text)
 from src.obsidian_automation.zotero_integrator import get_zotero_item_info
-from src.obsidian_automation.obsidian_note_creator import create_obsidian_note
-from src.obsidian_automation.keywords_reconstructor import KeywordsReconstructor
+from src.obsidian_automation.obsidian_note_creator import (
+    create_obsidian_note)
+from src.obsidian_automation.keywords_reconstructor import (
+    KeywordsReconstructor)
 
 
 def get_existing_notes():
@@ -43,16 +47,36 @@ def process_pdf(pdf_path):
                 print(f"エラー: {pdf_path} の要約を生成できませんでした。")
                 # 要約が失敗した場合でも、空の要約でノートを作成する
                 summary_data = {
-                    'summary': "要約の生成に失敗しました。手動で要約を追加してください。",
                     'abstract': '',
-                    'publication': ''
+                    'glossary': '',
+                    'task': '',
+                    'claim': '',
+                    'novelty': '',
+                    'keyidea': '',
+                    'method': '',
+                    'result': '',
+                    'ablation': '',
+                    'publication': '',
+                    'field': '',
+                    'theme': '',
+                    'keyword': ''
                 }
         except Exception as e:
             print(f"要約生成エラー: {e}")
             summary_data = {
-                'summary': "要約の生成中にエラーが発生しました。手動で要約を追加してください。",
                 'abstract': '',
-                'publication': ''
+                'glossary': '',
+                'task': '',
+                'claim': '',
+                'novelty': '',
+                'keyidea': '',
+                'method': '',
+                'result': '',
+                'ablation': '',
+                'publication': '',
+                'field': '',
+                'theme': '',
+                'keyword': ''
             }
 
         # 3. Zoteroから関連情報を取得
@@ -83,8 +107,8 @@ def process_pdf(pdf_path):
 def main():
     # コマンドライン引数の解析
     parser = argparse.ArgumentParser(description='Obsidian PDF自動化ツール')
-    parser.add_argument('-k', '--keywords', action='store_true', 
-                       help='キーワード再構成を実行する')
+    parser.add_argument('-k', '--keywords', action='store_true',
+                        help='キーワード再構成を実行する')
     args = parser.parse_args()
 
     print(f"Zotero User ID: {ZOTERO_USER_ID}")

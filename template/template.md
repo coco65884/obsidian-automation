@@ -37,7 +37,6 @@ rating: 0
 
 # Result
 {{result}}
-{{discussion}}
 
 # Ablation
 {{ablation}}
